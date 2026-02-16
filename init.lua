@@ -1,51 +1,15 @@
--- Plugin setup
-require("plugins").setup()
-require('telescope').load_extension('aerial')
+-- Enable byte-code caching for faster startup (replaces impatient.nvim, built-in since Neovim 0.9+)
+vim.loader.enable()
 
--- Configure and enable Nightfox with transparency
-local nightfox = require("nightfox")
-nightfox.setup({
-  options = {
-    --transparent = true, -- Note: Only used if you actually do :colorscheme nightfox
-    dim_inactive = false,
-    styles = {
-      comments = "italic",
-      functions = "bold",
-      keywords = "italic,bold",
-    },
-  },
-})
+-- Set leader key BEFORE any plugins or keymaps load
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
 
-require("tokyonight").setup({
-  style = "night",
-  transparent = true,
-  dim_inactive = false,
-})
+-- Core configuration
+require("config.options")
 
--- Enable true colors for Neovim
-vim.cmd [[
-  if has("termguicolors")
-    set termguicolors
-  endif
-  syntax enable
-]]
+-- Plugin manager (lazy.nvim) - loads all plugin specs from lua/plugins/
+require("config.lazy")
 
-vim.cmd("let g:netrw_liststyle = 3")
-
-vim.g.adwaita_transparent = true
-vim.g.adwaita_darker = true
--- vim.g.adwaita_disable_cursorline = true
-vim.cmd("colorscheme adwaita")
-
--- Additional transparency for specific UI elements
---vim.cmd [[
---  hi Normal guibg=NONE ctermbg=NONE   " Main editor background
---  hi NormalNC guibg=NONE ctermbg=NONE " Inactive windows
---  hi SignColumn guibg=NONE ctermbg=NONE  " Sign column (e.g., for LSP diagnostics)
---  hi Pmenu guibg=NONE ctermbg=NONE      " Popup menu
---  hi PmenuSel guibg=NONE ctermbg=NONE   " Selected popup menu item
---  hi VertSplit guibg=NONE ctermbg=NONE  " Vertical split line
---  hi StatusLineNC guibg=NONE ctermbg=NONE " Inactive status line
---]]
--- hi LineNr guibg=NONE ctermbg=NONE     " Line numbers
--- hi EndOfBuffer guibg=NONE ctermbg=NONE " Tilde (~) lines at the end of the buffer
+-- Keymaps (loaded after plugins so which-key can detect them)
+require("config.keymaps")
