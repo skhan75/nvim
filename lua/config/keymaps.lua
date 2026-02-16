@@ -61,3 +61,40 @@ map("n", "<leader>as", function()
     cfg.override({ provider = next_provider })
     vim.notify("AI switched to: " .. next_provider, vim.log.levels.INFO)
 end, { desc = "AI: Switch provider (Claude/GPT)" })
+
+-- ─── Change review (after AI applies changes) ───────────────────────
+-- ]x / [x  = jump between conflict markers (set by Avante automatically)
+-- These supplement the built-in Avante conflict keymaps:
+
+-- Open diff view to see ALL uncommitted changes across files
+map("n", "<leader>gD", "<cmd>DiffviewOpen<CR>", { desc = "Review all changes (diff view)", silent = true })
+
+-- Quickfix list of all modified files (jump between them with ]q / [q)
+map("n", "<leader>gm", function()
+    local handle = io.popen("git diff --name-only 2>/dev/null; git diff --name-only --cached 2>/dev/null")
+    if not handle then
+        vim.notify("Not in a git repo", vim.log.levels.WARN)
+        return
+    end
+    local result = handle:read("*a")
+    handle:close()
+    local files = {}
+    local seen = {}
+    for file in result:gmatch("[^\n]+") do
+        if not seen[file] then
+            seen[file] = true
+            table.insert(files, { filename = file, lnum = 1, text = "modified" })
+        end
+    end
+    if #files == 0 then
+        vim.notify("No modified files", vim.log.levels.INFO)
+        return
+    end
+    vim.fn.setqflist(files, "r")
+    vim.cmd("copen")
+    vim.notify(#files .. " modified file(s) in quickfix", vim.log.levels.INFO)
+end, { desc = "List modified files (quickfix)", silent = true })
+
+-- Fast quickfix navigation
+map("n", "]q", "<cmd>cnext<CR>zz", { desc = "Next quickfix item", silent = true })
+map("n", "[q", "<cmd>cprev<CR>zz", { desc = "Prev quickfix item", silent = true })
