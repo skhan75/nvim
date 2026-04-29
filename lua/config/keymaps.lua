@@ -40,32 +40,15 @@ map("n", "<C-w>k", "<C-w>k", { desc = "Move to above window" })
 map("n", "<C-w>l", "<C-w>l", { desc = "Move to right window" })
 
 -- ─── AI (Cursor-style shortcuts) ────────────────────────────────────────
--- Ctrl+L  = open / focus the AI chat sidebar  (like Cursor's Ctrl+L)
--- Ctrl+K  = AI edit on selected code           (like Cursor's Ctrl+K)
+-- Ctrl+L  = toggle Claude sidebar  (like Cursor's Ctrl+L)
 map("n", "<C-l>", function()
-    require("avante.api").ask()
-end, { desc = "AI: Open chat sidebar", silent = true })
+    _G.ClaudeSidebar.toggle()
+end, { desc = "AI: Toggle Claude sidebar", silent = true })
 map("v", "<C-l>", function()
-    require("avante.api").ask()
-end, { desc = "AI: Ask about selection", silent = true })
+    _G.ClaudeSidebar.toggle()
+end, { desc = "AI: Toggle Claude sidebar", silent = true })
 
-map("v", "<C-k>", function()
-    require("avante.api").edit()
-end, { desc = "AI: Edit selection inline", silent = true })
-
--- <leader>as = switch between Claude and GPT
-map("n", "<leader>as", function()
-    local cfg = require("avante.config")
-    local current = cfg.provider or "claude"
-    local next_provider = current == "claude" and "openai" or "claude"
-    cfg.override({ provider = next_provider })
-    vim.notify("AI switched to: " .. next_provider, vim.log.levels.INFO)
-end, { desc = "AI: Switch provider (Claude/GPT)" })
-
--- ─── Change review (after AI applies changes) ───────────────────────
--- ]x / [x  = jump between conflict markers (set by Avante automatically)
--- These supplement the built-in Avante conflict keymaps:
-
+-- ─── Change review ──────────────────────────────────────────────────
 -- Open diff view to see ALL uncommitted changes across files
 map("n", "<leader>gD", "<cmd>DiffviewOpen<CR>", { desc = "Review all changes (diff view)", silent = true })
 

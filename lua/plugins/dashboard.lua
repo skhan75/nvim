@@ -7,6 +7,21 @@ return {
             local alpha = require("alpha")
             local dashboard = require("alpha.themes.dashboard")
 
+            -- Cyberdream gradient header colors (cyan -> blue -> magenta)
+            local header_colors = {
+                { "AlphaHL1", { fg = "#5ef1ff" } },
+                { "AlphaHL2", { fg = "#5ef1ff" } },
+                { "AlphaHL3", { fg = "#5ea1ff" } },
+                { "AlphaHL4", { fg = "#bd5eff" } },
+                { "AlphaHL5", { fg = "#bd5eff" } },
+                { "AlphaHL6", { fg = "#ff5ef1" } },
+                { "AlphaHL7", { fg = "#ff6e5e" } },
+                { "AlphaHL8", { fg = "#ff6e5e" } },
+            }
+            for _, hl in ipairs(header_colors) do
+                vim.api.nvim_set_hl(0, hl[1], hl[2])
+            end
+
             dashboard.section.header.val = {
                 "                                                     ",
                 "  ███╗   ██╗███████╗ ██████╗ ██╗   ██╗██╗███╗   ███╗",
@@ -18,19 +33,27 @@ return {
                 "                                                     ",
             }
 
+            dashboard.section.header.opts.hl = {}
+            for i = 1, #dashboard.section.header.val do
+                dashboard.section.header.opts.hl[i] = { { header_colors[i][1], 0, -1 } }
+            end
+
             dashboard.section.buttons.val = {
                 dashboard.button("f", "  Find file",       "<cmd>Telescope find_files<CR>"),
                 dashboard.button("r", "  Recent files",    "<cmd>Telescope oldfiles<CR>"),
                 dashboard.button("g", "  Search text",     "<cmd>Telescope live_grep<CR>"),
                 dashboard.button("p", "  Projects",        "<cmd>Telescope project<CR>"),
                 dashboard.button("c", "  Config",          "<cmd>Telescope find_files cwd=~/.config/nvim<CR>"),
-                dashboard.button("a", "  AI Chat",         "<cmd>AvanteAsk<CR>"),
+                dashboard.button("a", "󱙺  Claude Code",      "<cmd>lua _G.ClaudeSidebar.toggle()<CR>"),
                 dashboard.button("l", "󰒲  Lazy (plugins)",  "<cmd>Lazy<CR>"),
                 dashboard.button("q", "  Quit",            "<cmd>qa<CR>"),
             }
 
-            dashboard.section.header.opts.hl = "AlphaHeader"
-            dashboard.section.buttons.opts.hl = "AlphaButtons"
+            -- Style each button shortcut key
+            for _, button in ipairs(dashboard.section.buttons.val) do
+                button.opts.hl = "AlphaButtons"
+                button.opts.hl_shortcut = "AlphaShortcut"
+            end
 
             dashboard.section.footer.val = function()
                 local stats = require("lazy").stats()

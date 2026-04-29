@@ -14,53 +14,37 @@ return {
         config = function()
             require("lualine").setup({
                 options = {
-                    theme = "auto",
+                    theme = "cyberdream",
                     globalstatus = true,
                     section_separators = { left = "", right = "" },
                     component_separators = { left = "", right = "" },
                 },
                 sections = {
-                    lualine_a = { "mode" },
+                    lualine_a = { { "mode", separator = { left = "", right = "" } } },
                     lualine_b = { "branch", "diff", "diagnostics" },
                     lualine_c = {
                         { "filename", file_status = true, path = 1 },
                         {
                             "lsp_progress",
                             display_components = { "lsp_client_name", "spinner", "percentage" },
-                            colors = {
-                                percentage = "#ffffff",
-                                title = "#ffffff",
-                                message = "#ffffff",
-                                spinner = "#ffffff",
-                                lsp_client_name = "#ffffff",
-                            },
                         },
                     },
                     lualine_x = {
                         {
                             function()
-                                local ok, avante_config = pcall(require, "avante.config")
-                                if not ok then return "" end
-                                local provider = avante_config.provider or ""
-                                local icon = provider == "claude" and " " or " "
-                                local label = provider == "claude" and "Claude" or "GPT-4o"
-                                return icon .. label
+                                local open = _G.ClaudeSidebar and _G.ClaudeSidebar.is_open()
+                                return open and "󱙺 Claude" or ""
                             end,
                             cond = function()
-                                return pcall(require, "avante.config")
-                            end,
-                            color = function()
-                                local ok, avante_config = pcall(require, "avante.config")
-                                if ok and avante_config.provider == "claude" then
-                                    return { fg = "#cc785c" }
-                                end
-                                return { fg = "#74aa9c" }
+                                return _G.ClaudeSidebar ~= nil and _G.ClaudeSidebar.is_open()
                             end,
                         },
-                        "encoding", "fileformat", "filetype",
+                        "encoding",
+                        "fileformat",
+                        "filetype",
                     },
                     lualine_y = { "progress" },
-                    lualine_z = { "location" },
+                    lualine_z = { { "location", separator = { left = "", right = "" } } },
                 },
                 inactive_sections = {
                     lualine_a = {},
@@ -70,7 +54,7 @@ return {
                     lualine_y = {},
                     lualine_z = {},
                 },
-                extensions = { "nvim-tree", "quickfix" },
+                extensions = { "nvim-tree", "quickfix", "toggleterm", "lazy" },
             })
         end,
     },
@@ -121,6 +105,12 @@ return {
                     highlight_diagnostics = "name",
                     indent_markers = { enable = true },
                     icons = {
+                        -- Disable inline diagnostic icons in the tree;
+                        -- their signcolumn placement triggers E155 errors.
+                        -- Filename highlight via highlight_diagnostics still works.
+                        show = {
+                            diagnostics = false,
+                        },
                         glyphs = {
                             default = "󰈙",
                             symlink = "",
@@ -175,22 +165,11 @@ return {
             })
             wk.add({
                 -- ─── Leader prefix groups ─────────────────────────────
-                { "<leader>a",  group = "AI (Avante)",      icon = " " },
-                { "<leader>aa", desc = "Ask AI (open chat)" },
-                { "<leader>ae", desc = "AI edit selection" },
-                { "<leader>af", desc = "Focus AI sidebar" },
-                { "<leader>ar", desc = "Refresh AI chat" },
-                { "<leader>as", desc = "Switch provider (Claude/GPT)" },
-                { "<leader>at", desc = "Toggle AI sidebar" },
-                { "<leader>ac", desc = "Add current file to AI context" },
-                { "<leader>aB", desc = "Add all open buffers to AI context" },
-                { "<leader>aH", desc = "Browse AI chat history" },
-                { "<leader>a?", desc = "Select AI model" },
-                { "<leader>aS", desc = "Stop AI generation" },
-                { "<leader>ad", desc = "Toggle AI debug" },
-                { "<leader>aI", desc = "Toggle AI hints" },
-                { "<leader>al", desc = "Toggle AI suggestions" },
-                { "<leader>aR", desc = "Toggle AI repomap" },
+                { "<leader>a",  group = "AI (Claude)",       icon = "󱙺 " },
+                { "<leader>aa", desc = "Toggle Claude sidebar" },
+                { "<leader>af", desc = "Focus Claude sidebar" },
+                { "<leader>at", desc = "Toggle Claude sidebar" },
+                { "<leader>aq", desc = "Close Claude sidebar" },
 
                 { "<leader>b",  group = "Buffers",          icon = " " },
                 { "<leader>bc", desc = "Close current buffer" },
@@ -219,6 +198,9 @@ return {
                 { "<leader>fd", desc = "Show diagnostics" },
                 { "<leader>fr", desc = "Show LSP references" },
                 { "<leader>fp", desc = "Search projects" },
+                { "<leader>fB", desc = "Open file browser" },
+                { "<leader>fH", desc = "Show command history" },
+                { "<leader>fR", desc = "Show registers" },
 
                 { "<leader>g",  group = "Git / Diff review", icon = " " },
                 { "<leader>gs", desc = "Git status" },
@@ -248,13 +230,14 @@ return {
 
                 { "<leader>l",  group = "LSP",              icon = " " },
                 { "<leader>ld", desc = "Document symbols" },
+                { "<leader>le", desc = "Show line diagnostic (popup)" },
+                { "<leader>lL", desc = "Toggle diagnostic display mode" },
 
                 { "<leader>r",  group = "Refactor",         icon = " " },
                 { "<leader>rn", desc = "Rename symbol" },
 
                 { "<leader>t",  group = "Terminal / Treesj", icon = " " },
                 { "<leader>tt", desc = "Toggle terminal" },
-                { "<leader>tc", desc = "Open Claude CLI terminal" },
                 { "<leader>ts", desc = "Split block into lines" },
                 { "<leader>tj", desc = "Join block into one line" },
 
@@ -280,13 +263,11 @@ return {
                 { "]c",         desc = "Next git change" },
                 { "[q",         desc = "Prev quickfix item" },
                 { "]q",         desc = "Next quickfix item" },
-                { "]x",         desc = "Next AI conflict marker" },
-                { "[x",         desc = "Prev AI conflict marker" },
                 { "s",          desc = "Leap forward" },
                 { "S",          desc = "Leap backward" },
 
                 -- ─── Ctrl shortcuts ──────────────────────────────────
-                { "<C-l>",      desc = "AI: Open chat (Cursor-style)" },
+                { "<C-l>",      desc = "AI: Toggle Claude sidebar" },
                 { "<C-\\>",     desc = "Toggle terminal" },
             })
         end,
@@ -305,9 +286,12 @@ return {
         },
         config = function()
             require("notify").setup({
-                background_colour = "#1f2335",
-                render = "compact",
-                stages = "slide",
+                background_colour = "#000000",
+                render = "wrapped-compact",
+                stages = "fade_in_slide_out",
+                timeout = 3000,
+                max_width = 60,
+                top_down = true,
             })
             vim.notify = require("notify")
         end,

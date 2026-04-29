@@ -8,100 +8,96 @@ return {
         end,
     },
 
-    -- Bridge between Mason and lspconfig
+    -- LSP configurations with Mason integration
     {
-        "williamboman/mason-lspconfig.nvim",
-        lazy = false,
-        dependencies = { "williamboman/mason.nvim" },
+        "neovim/nvim-lspconfig",
+        event = { "BufReadPre", "BufNewFile" },
+        dependencies = {
+            "williamboman/mason.nvim",
+            "williamboman/mason-lspconfig.nvim",
+            "hrsh7th/cmp-nvim-lsp",
+        },
         config = function()
+            local lspconfig = require("lspconfig")
+            local capabilities = require("cmp_nvim_lsp").default_capabilities()
+
+            local default_opts = {
+                capabilities = capabilities,
+                flags = { debounce_text_changes = 150 },
+            }
+
+            -- Mason-lspconfig bridge: auto-install servers and set them up via handlers
             require("mason-lspconfig").setup({
                 ensure_installed = {
                     "ts_ls", "eslint", "jsonls", "html", "cssls",
                     "pyright", "gopls", "jdtls", "lua_ls", "clangd",
                     "elixirls", "marksman",
                 },
-                automatic_enable = true,
-            })
-        end,
-    },
-
-    -- LSP configurations (Neovim 0.11+ vim.lsp.config API)
-    {
-        "neovim/nvim-lspconfig",
-        dependencies = {
-            "williamboman/mason.nvim",
-            "williamboman/mason-lspconfig.nvim",
-            "hrsh7th/cmp-nvim-lsp",
-        },
-        event = { "BufReadPre", "BufNewFile" },
-        config = function()
-            local capabilities = require("cmp_nvim_lsp").default_capabilities()
-
-            -- Default config for all servers
-            vim.lsp.config("*", {
-                capabilities = capabilities,
-                flags = { debounce_text_changes = 150 },
-            })
-
-            -- TypeScript: filter out noisy diagnostics
-            vim.lsp.config("ts_ls", {
+                automatic_installation = true,
                 handlers = {
-                    ["textDocument/publishDiagnostics"] = function(_, result, ctx, cfg)
-                        result.diagnostics = vim.tbl_filter(function(diagnostic)
-                            return not diagnostic.message:match("Could not find a declaration file for module")
-                                and not diagnostic.message:match("it may be converted to an ES module")
-                        end, result.diagnostics)
-                        vim.lsp.handlers["textDocument/publishDiagnostics"](_, result, ctx, cfg)
+                    -- Default handler: setup every server with shared capabilities
+                    function(server_name)
+                        lspconfig[server_name].setup(default_opts)
                     end,
-                },
-            })
 
-            -- ESLint settings
-            vim.lsp.config("eslint", {
-                settings = {
-                    codeAction = {
-                        disableRuleComment = { enable = true, location = "separateLine" },
-                        showDocumentation = { enable = true },
-                    },
-                },
-            })
+                    -- TypeScript: filter out noisy diagnostics
+                    ["ts_ls"] = function()
+                        lspconfig.ts_ls.setup(vim.tbl_deep_extend("force", default_opts, {
+                            handlers = {
+                                ["textDocument/publishDiagnostics"] = function(_, result, ctx, cfg)
+                                    result.diagnostics = vim.tbl_filter(function(d)
+                                        return not d.message:match("Could not find a declaration file for module")
+                                            and not d.message:match("it may be converted to an ES module")
+                                    end, result.diagnostics)
+                                    vim.lsp.handlers["textDocument/publishDiagnostics"](_, result, ctx, cfg)
+                                end,
+                            },
+                        }))
+                    end,
 
-            -- Lua: Neovim development settings
-            vim.lsp.config("lua_ls", {
-                root_markers = {
-                    ".emmyrc.json", ".luarc.json", ".luarc.jsonc",
-                    ".luacheckrc", ".stylua.toml", "stylua.toml",
-                    "selene.toml", "selene.yml", ".git",
-                },
-                settings = {
-                    Lua = {
-                        runtime = { version = "LuaJIT" },
-                        diagnostics = { globals = { "vim" } },
-                        workspace = { library = vim.api.nvim_get_runtime_file("", true) },
-                        telemetry = { enable = false },
-                    },
-                },
-            })
+                    -- ESLint
+                    ["eslint"] = function()
+                        lspconfig.eslint.setup(vim.tbl_deep_extend("force", default_opts, {
+                            settings = {
+                                codeAction = {
+                                    disableRuleComment = { enable = true, location = "separateLine" },
+                                    showDocumentation = { enable = true },
+                                },
+                            },
+                        }))
+                    end,
 
-            -- Java: flatten nested root_markers
-            vim.lsp.config("jdtls", {
-                root_markers = {
-                    "mvnw", "gradlew", "settings.gradle", "settings.gradle.kts",
-                    "build.xml", "pom.xml", "build.gradle", "build.gradle.kts", ".git",
-                },
-            })
+                    -- Lua: Neovim development settings
+                    ["lua_ls"] = function()
+                        lspconfig.lua_ls.setup(vim.tbl_deep_extend("force", default_opts, {
+                            settings = {
+                                Lua = {
+                                    runtime = { version = "LuaJIT" },
+                                    diagnostics = { globals = { "vim" } },
+                                    workspace = {
+                                        library = vim.api.nvim_get_runtime_file("", true),
+                                        checkThirdParty = false,
+                                    },
+                                    telemetry = { enable = false },
+                                },
+                            },
+                        }))
+                    end,
 
-            -- Elixir: OS-specific language server path
-            local elixir_ls_path
-            if vim.fn.has("mac") == 1 then
-                elixir_ls_path = "/opt/homebrew/bin/elixir-ls"
-            elseif vim.fn.has("unix") == 1 then
-                elixir_ls_path = "/usr/bin/elixir-ls"
-            end
-            vim.lsp.config("elixirls", {
-                cmd = { elixir_ls_path },
-                settings = {
-                    elixirls = { dialyzerenabled = true, fetchdeps = false },
+                    -- Elixir: OS-specific language server path
+                    ["elixirls"] = function()
+                        local opts = vim.tbl_deep_extend("force", default_opts, {
+                            settings = {
+                                elixirLS = { dialyzerEnabled = true, fetchDeps = false },
+                            },
+                        })
+                        if vim.fn.has("mac") == 1 then
+                            opts.cmd = { "/opt/homebrew/bin/elixir-ls" }
+                        elseif vim.fn.has("unix") == 1 then
+                            opts.cmd = { "/usr/bin/elixir-ls" }
+                        end
+                        lspconfig.elixirls.setup(opts)
+                    end,
                 },
             })
 

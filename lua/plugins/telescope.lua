@@ -16,7 +16,7 @@ return {
             { "<leader>fb", "<cmd>Telescope buffers<cr>", desc = "List open buffers" },
             { "<leader>fh", "<cmd>Telescope help_tags<cr>", desc = "Search help tags" },
             { "<leader>fm", "<cmd>Telescope media_files<cr>", desc = "Search media files" },
-            { "<leader>fbr", "<cmd>Telescope file_browser<cr>", desc = "Open file browser" },
+            { "<leader>fB", "<cmd>Telescope file_browser<cr>", desc = "Open file browser" },
             { "<leader>fp", "<cmd>Telescope project<cr>", desc = "Search projects" },
             { "<leader>fo", "<cmd>Telescope oldfiles<cr>", desc = "Recently opened files" },
             { "<leader>fk", "<cmd>Telescope keymaps<cr>", desc = "Show key mappings" },
@@ -25,8 +25,8 @@ return {
             { "<leader>fc", "<cmd>Telescope find_files cwd=~/.config/nvim<cr>", desc = "Search nvim config" },
             { "<leader>fd", "<cmd>Telescope diagnostics<cr>", desc = "Show diagnostics" },
             { "<leader>fr", "<cmd>Telescope lsp_references<cr>", desc = "Show LSP references" },
-            { "<leader>fhc", "<cmd>Telescope command_history<cr>", desc = "Show command history" },
-            { "<leader>frg", "<cmd>Telescope registers<cr>", desc = "Show registers" },
+            { "<leader>fH", "<cmd>Telescope command_history<cr>", desc = "Show command history" },
+            { "<leader>fR", "<cmd>Telescope registers<cr>", desc = "Show registers" },
             -- Git (via Telescope)
             { "<leader>gs", "<cmd>Telescope git_status<cr>", desc = "Git status" },
             { "<leader>gb", "<cmd>Telescope git_branches<cr>", desc = "Git branches" },
@@ -37,28 +37,85 @@ return {
         },
         config = function()
             local telescope = require("telescope")
+            local actions = require("telescope.actions")
+
             telescope.setup({
                 defaults = {
+                    -- Use ripgrep for live_grep, including hidden files but skipping .git
                     vimgrep_arguments = {
                         "rg", "--color=never", "--no-heading", "--with-filename",
                         "--line-number", "--column", "--smart-case",
+                        "--hidden", "--glob=!**/.git/*",
                     },
-                    prompt_prefix = "> ",
-                    selection_caret = "> ",
+                    prompt_prefix = "  ",
+                    selection_caret = " ",
                     entry_prefix = "  ",
                     initial_mode = "insert",
                     selection_strategy = "reset",
-                    sorting_strategy = "descending",
+                    -- Ascending + top prompt = modern layout, easier to scan
+                    sorting_strategy = "ascending",
                     layout_strategy = "horizontal",
                     layout_config = {
-                        horizontal = { mirror = false },
+                        prompt_position = "top",
+                        horizontal = { preview_width = 0.55, results_width = 0.8 },
                         vertical = { mirror = false },
+                        width = 0.87,
+                        height = 0.80,
+                        preview_cutoff = 120,
                     },
                     path_display = { "truncate" },
+                    -- Skip heavy directories on every search
+                    file_ignore_patterns = {
+                        "%.git/", "node_modules/", "dist/", "build/", "target/",
+                        "%.next/", "%.cache/", "__pycache__/", "%.venv/", "venv/",
+                        "%.lock", "%.min%.js", "%.min%.css", "%.map",
+                        "%.png", "%.jpg", "%.jpeg", "%.gif", "%.webp", "%.ico",
+                        "%.pdf", "%.zip", "%.tar%.gz",
+                    },
                     border = {},
                     borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
                     color_devicons = true,
                     set_env = { ["COLORTERM"] = "truecolor" },
+                    -- Cache previews for snappier scrolling through results
+                    cache_picker = { num_pickers = 5 },
+                    mappings = {
+                        i = {
+                            ["<C-j>"] = actions.move_selection_next,
+                            ["<C-k>"] = actions.move_selection_previous,
+                            ["<C-d>"] = actions.preview_scrolling_down,
+                            ["<C-u>"] = actions.preview_scrolling_up,
+                            ["<C-q>"] = actions.send_selected_to_qflist + actions.open_qflist,
+                            ["<C-a>"] = actions.send_to_qflist + actions.open_qflist,
+                            ["<C-x>"] = actions.select_horizontal,
+                            ["<C-v>"] = actions.select_vertical,
+                            ["<C-t>"] = actions.select_tab,
+                            ["<Esc>"] = actions.close,
+                        },
+                        n = {
+                            ["q"] = actions.close,
+                            ["<C-q>"] = actions.send_selected_to_qflist + actions.open_qflist,
+                        },
+                    },
+                },
+                pickers = {
+                    -- Use fd for file listing — fastest option, respects .gitignore
+                    find_files = {
+                        find_command = {
+                            "fd", "--type=f", "--hidden", "--strip-cwd-prefix",
+                            "--exclude=.git", "--exclude=node_modules",
+                        },
+                    },
+                    buffers = {
+                        sort_lastused = true,
+                        sort_mru = true,
+                        ignore_current_buffer = true,
+                        mappings = {
+                            i = { ["<C-d>"] = actions.delete_buffer },
+                            n = { ["dd"] = actions.delete_buffer },
+                        },
+                    },
+                    live_grep = { additional_args = function() return { "--hidden" } end },
+                    lsp_references = { show_line = false, include_declaration = false },
                 },
                 extensions = {
                     fzf = {

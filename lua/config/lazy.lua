@@ -12,7 +12,7 @@ vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup("plugins", {
     defaults = { lazy = false },
-    install = { colorscheme = { "forest_stream" } },
+    install = { colorscheme = { "cyberdream" } },
     checker = { enabled = false },
     change_detection = { notify = false },
     performance = {

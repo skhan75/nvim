@@ -1,16 +1,15 @@
 return {
     {
-        "rockerBOO/boo-colorscheme-nvim",
+        "scottmckendry/cyberdream.nvim",
         lazy = false,
         priority = 1000,
         config = function()
-            vim.cmd("colorscheme forest_stream")
-            -- Transparency settings
-            vim.api.nvim_set_hl(0, "Normal", { bg = "NONE", ctermbg = "NONE" })
-            vim.api.nvim_set_hl(0, "Folded", { bg = "NONE" })
-            vim.api.nvim_set_hl(0, "NonText", { bg = "NONE" })
-            vim.api.nvim_set_hl(0, "LineNr", { bg = "NONE" })
-            vim.api.nvim_set_hl(0, "EndOfBuffer", { bg = "NONE" })
+            require("cyberdream").setup({
+                transparent = false,
+                italic_comments = true,
+                borderless_pickers = false,
+            })
+            vim.cmd.colorscheme("hack")
         end,
     },
 }

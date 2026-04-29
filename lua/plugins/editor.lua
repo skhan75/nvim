@@ -5,17 +5,19 @@ return {
         build = ":TSUpdate",
         event = { "BufReadPost", "BufNewFile" },
         config = function()
+            local ts_config = require("nvim-treesitter.config")
+            local ts_install = require("nvim-treesitter.install")
             local wanted = {
                 "c", "cpp", "lua", "java", "python", "javascript", "go",
-                "markdown", "json", "yaml", "vim", "typescript",
-                "elixir", "heex", "eex",
+                "markdown", "markdown_inline", "json", "yaml", "vim", "vimdoc",
+                "typescript", "elixir", "heex", "eex", "html", "css",
             }
-            local installed = require("nvim-treesitter.config").get_installed()
+            local installed = ts_config.get_installed()
             local to_install = vim.tbl_filter(function(lang)
                 return not vim.tbl_contains(installed, lang)
             end, wanted)
             if #to_install > 0 then
-                require("nvim-treesitter.install").install(to_install)
+                ts_install.install(to_install)
             end
         end,
     },
@@ -38,7 +40,11 @@ return {
         event = "InsertEnter",
         config = function()
             require("nvim-ts-autotag").setup({
-                filetypes = { "html", "javascript", "typescriptreact", "vue" },
+                opts = {
+                    enable_close = true,
+                    enable_rename = true,
+                    enable_close_on_slash = false,
+                },
             })
         end,
     },
@@ -102,18 +108,13 @@ return {
         main = "ibl",
         event = { "BufReadPost", "BufNewFile" },
         config = function()
-            local hooks = require("ibl.hooks")
-            hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
-                vim.api.nvim_set_hl(0, "IblIndent", { fg = "#3b3b3b", nocombine = true })
-                vim.api.nvim_set_hl(0, "IblScope", { fg = "#5b5b5b", nocombine = true })
-            end)
             require("ibl").setup({
-                indent = { char = "│", tab_char = "│", highlight = { "IblIndent" } },
-                scope = { enabled = true, show_start = false, show_end = false, highlight = { "IblScope" } },
+                indent = { char = "│", tab_char = "│" },
+                scope = { enabled = true, show_start = false, show_end = false },
                 exclude = {
                     filetypes = {
                         "help", "alpha", "dashboard", "NvimTree", "Trouble",
-                        "lazy", "mason", "notify", "toggleterm", "Avante",
+                        "lazy", "mason", "notify", "toggleterm",
                     },
                 },
             })

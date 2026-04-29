@@ -4,7 +4,6 @@ return {
         version = "*",
         keys = {
             { "<C-\\>", desc = "Toggle terminal" },
-            { "<leader>tc", desc = "Open Claude CLI" },
             { "<leader>tt", "<cmd>ToggleTerm<CR>", desc = "Toggle terminal" },
         },
         config = function()
@@ -21,17 +20,6 @@ return {
                 shade_terminals = true,
                 float_opts = { border = "curved" },
             })
-
-            -- Dedicated Claude CLI terminal
-            local Terminal = require("toggleterm.terminal").Terminal
-            local claude_term = Terminal:new({
-                cmd = "claude",
-                direction = "vertical",
-                close_on_exit = false,
-            })
-            vim.keymap.set("n", "<leader>tc", function()
-                claude_term:toggle()
-            end, { desc = "Toggle Claude CLI" })
         end,
     },
 }

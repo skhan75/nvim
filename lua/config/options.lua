@@ -1,6 +1,12 @@
 local opt = vim.opt
 local indent = 4
 
+-- Disable unused language providers to silence :checkhealth warnings
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_ruby_provider = 0
+
 -- Ensure tree-sitter CLI and local binaries are discoverable
 local home = os.getenv("HOME") or ""
 local extra_paths = {
@@ -98,9 +104,13 @@ opt.fillchars = {
     eob = " ",
 }
 
--- Diagnostic signs (nerd font icons)
+-- Diagnostics:
+--   Cursor line  → full wrapping message via virtual_lines (no overflow)
+--   Other lines  → gutter sign only (clean, no clutter)
+-- Toggle to see all virtual_lines at once with <leader>lL (defined below).
 vim.diagnostic.config({
-    virtual_text = { prefix = "●", spacing = 4 },
+    virtual_lines = { current_line = true },
+    virtual_text = false,
     signs = {
         text = {
             [vim.diagnostic.severity.ERROR] = " ",
@@ -112,7 +122,48 @@ vim.diagnostic.config({
     underline = true,
     update_in_insert = false,
     severity_sort = true,
-    float = { border = "rounded", source = true },
+    float = {
+        border = "rounded",
+        source = true,
+        header = "",
+        prefix = "",
+        max_width = 80,
+        wrap = true,
+    },
+})
+
+-- Toggle full virtual_lines (all lines) vs current-line-only
+vim.keymap.set("n", "<leader>lL", function()
+    local cfg = vim.diagnostic.config() or {}
+    local vl = cfg.virtual_lines
+    if type(vl) == "table" and vl.current_line then
+        vim.diagnostic.config({ virtual_lines = true })
+        vim.notify("Diagnostics: virtual_lines (all)", vim.log.levels.INFO)
+    else
+        vim.diagnostic.config({ virtual_lines = { current_line = true } })
+        vim.notify("Diagnostics: current line only", vim.log.levels.INFO)
+    end
+end, { desc = "Toggle diagnostic display mode" })
+
+-- Floating popup with full diagnostic for the current line
+vim.keymap.set("n", "<leader>le", function()
+    vim.diagnostic.open_float(nil, { scope = "line" })
+end, { desc = "Show diagnostics for current line" })
+
+-- nvim-tree calls sign_place with these names but only defines them when
+-- renderer.icons.show.diagnostics is true. Register them ourselves so
+-- sign_place never fails. Also re-apply after lazy loads in case nvim-tree
+-- undefined them during its own setup.
+local function define_nvim_tree_signs()
+    vim.fn.sign_define("NvimTreeDiagnosticErrorIcon", { text = "", texthl = "DiagnosticError" })
+    vim.fn.sign_define("NvimTreeDiagnosticWarnIcon",  { text = "", texthl = "DiagnosticWarn" })
+    vim.fn.sign_define("NvimTreeDiagnosticInfoIcon",  { text = "", texthl = "DiagnosticInfo" })
+    vim.fn.sign_define("NvimTreeDiagnosticHintIcon",  { text = "󰌵", texthl = "DiagnosticHint" })
+end
+define_nvim_tree_signs()
+vim.api.nvim_create_autocmd("User", {
+    pattern = "LazyDone",
+    callback = define_nvim_tree_signs,
 })
 
 -- Highlight on yank (built-in, no plugin needed)
