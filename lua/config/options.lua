@@ -26,11 +26,10 @@ opt.mouse = "a"
 opt.clipboard = "unnamedplus"
 opt.swapfile = false
 opt.completeopt = "menuone,noselect"
-opt.ruler = true
+-- 'ruler' omitted: laststatus=3 means it never renders.
 opt.laststatus = 3
 opt.incsearch = true
 opt.showmatch = true
-opt.visualbell = true
 opt.scrolloff = 8
 opt.sidescrolloff = 8
 opt.conceallevel = 0
@@ -48,8 +47,21 @@ opt.smartindent = true
 -- UI
 opt.number = true
 opt.relativenumber = true
-opt.foldmethod = "marker"
 opt.colorcolumn = "80"
+-- Fixed-width gutter: with "auto" the whole buffer shifts sideways the moment
+-- a diagnostic or git sign appears, then shifts back.
+opt.signcolumn = "yes:1"
+-- One consistent border for every float (hover, signature, diagnostics, input).
+opt.winborder = "rounded"
+
+-- Folding via treesitter. Was "marker", which meant folds only existed where
+-- someone typed {{{ -- i.e. nowhere -- despite a full parser set being installed.
+opt.foldmethod = "expr"
+opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+opt.foldtext = "" -- 0.10+: render the fold's first line with real highlighting
+opt.foldlevel = 99
+opt.foldlevelstart = 99
+opt.foldnestmax = 4
 opt.cmdheight = 1
 opt.splitright = true
 opt.splitbelow = true
@@ -64,15 +76,23 @@ opt.background = "dark"
 -- Performance
 opt.hidden = true
 opt.history = 100
-opt.synmaxcol = 240
 opt.updatetime = 200
-opt.lazyredraw = false
+-- synmaxcol removed: it capped the *regex* syntax engine, which treesitter
+-- highlighting (started in plugins/editor.lua) now replaces entirely.
+
+-- Navigation
+-- "stack" keeps the jumplist sane when you branch; "view" restores the exact
+-- scroll position on <C-o>. Together they make jumping cheap enough to do freely.
+opt.jumpoptions = "stack,view"
 
 -- Misc
 opt.shortmess:append("c")
 opt.whichwrap:append("<,>,[,],h,l")
 opt.iskeyword:append("-")
-opt.hlsearch = false
+opt.belloff = "all"
+-- Search highlighting is on (it was off, which makes search useless as a motion);
+-- <Esc> clears it -- see config/keymaps.lua.
+opt.hlsearch = true
 
 -- Format options
 opt.formatoptions = opt.formatoptions
@@ -161,11 +181,31 @@ vim.api.nvim_create_autocmd("User", {
     callback = define_nvim_tree_signs,
 })
 
--- Highlight on yank (built-in, no plugin needed)
+-- Highlight on yank (built-in, no plugin needed).
+-- Uses a dedicated group, not IncSearch -- IncSearch is dark-on-#66FFFF, which
+-- strobes the whole line on every yank.
 vim.api.nvim_create_autocmd("TextYankPost", {
     group = vim.api.nvim_create_augroup("highlight_yank", { clear = true }),
     callback = function()
-        vim.hl.on_yank({ higroup = "IncSearch", timeout = 200 })
+        vim.hl.on_yank({ higroup = "YankFlash", timeout = 150 })
+    end,
+})
+
+-- Prose settings. Replaces vim-pencil, which was unmaintained since 2023 and
+-- whose "soft wrap" mode is just these five options.
+vim.api.nvim_create_autocmd("FileType", {
+    group = vim.api.nvim_create_augroup("prose", { clear = true }),
+    pattern = { "markdown", "gitcommit", "text" },
+    callback = function()
+        vim.opt_local.wrap = true
+        vim.opt_local.linebreak = true
+        vim.opt_local.breakindent = true
+        vim.opt_local.spell = true
+        vim.opt_local.colorcolumn = ""
+        -- render-markdown.nvim needs conceal to hide **, _, [](). The global
+        -- conceallevel=0 was silently defeating it.
+        vim.opt_local.conceallevel = 3
+        vim.opt_local.concealcursor = ""
     end,
 })
 

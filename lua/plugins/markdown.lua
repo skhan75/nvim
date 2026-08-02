@@ -1,41 +1,39 @@
+-- Markdown.
+--
+-- Removed three of the five plugins that were here:
+--   plasticboy/vim-markdown -- Vimscript regex syntax plus its own foldexpr,
+--     both of which fight the treesitter markdown parser and render-markdown.
+--     The repo also moved to preservim years ago.
+--   preservim/vim-pencil -- unmaintained since 2023; its "soft wrap" mode is
+--     wrap + linebreak + breakindent + nolist, now a FileType autocmd in
+--     config/options.lua.
+--   ellisonleao/glow.nvim -- the `glow` binary is not installed, so :Glow was
+--     a dead command.
 return {
-    -- Markdown preview in browser
+    -- Markdown preview in the browser.
+    -- Note: if :MarkdownPreview fails, run `:Lazy build markdown-preview.nvim`
+    -- -- the build step had never completed.
     {
         "iamcco/markdown-preview.nvim",
-        build = function() vim.fn["mkdp#util#install"]() end,
-        ft = "markdown",
-    },
-
-    -- Markdown syntax and folding
-    {
-        "plasticboy/vim-markdown",
-        ft = "markdown",
-    },
-
-    -- Auto-wrapping for Markdown
-    {
-        "preservim/vim-pencil",
-        ft = "markdown",
-        config = function()
-            vim.api.nvim_create_autocmd("FileType", {
-                pattern = "markdown",
-                callback = function()
-                    vim.fn["pencil#init"]({ wrap = "soft" })
-                end,
-            })
-            -- Init for the buffer that triggered the plugin load
-            if vim.bo.filetype == "markdown" then
-                vim.fn["pencil#init"]({ wrap = "soft" })
-            end
+        build = function()
+            vim.fn["mkdp#util#install"]()
         end,
+        ft = "markdown",
+        keys = {
+            { "<leader>mp", "<cmd>MarkdownPreviewToggle<cr>", ft = "markdown", desc = "Toggle markdown preview" },
+        },
     },
 
-    -- Glow: terminal markdown preview
+    -- In-buffer rendering. conceallevel is set to 3 for markdown in
+    -- config/options.lua; the previous global conceallevel=0 meant this plugin
+    -- could only ever do half its job.
     {
-        "ellisonleao/glow.nvim",
-        cmd = "Glow",
-        config = function()
-            require("glow").setup({ style = "dark", width = 120 })
-        end,
+        "MeanderingProgrammer/render-markdown.nvim",
+        dependencies = { "nvim-treesitter/nvim-treesitter" },
+        ft = { "markdown" },
+        opts = {
+            file_types = { "markdown" },
+            completions = { blink = { enabled = true } },
+        },
     },
 }

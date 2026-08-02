@@ -121,13 +121,7 @@ _G.ClaudeSidebar = {
     is_open = is_claude_open,
 }
 
-return {
-    -- Render Markdown nicely in chat buffers and markdown files
-    {
-        "MeanderingProgrammer/render-markdown.nvim",
-        ft = { "markdown" },
-        opts = {
-            file_types = { "markdown" },
-        },
-    },
-}
+-- No plugin specs here: the sidebar above is hand-rolled, and
+-- render-markdown.nvim now lives in lua/plugins/markdown.lua so it is declared
+-- exactly once.
+return {}

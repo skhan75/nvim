@@ -1,92 +1,111 @@
 return {
-    -- Icons
-    { "nvim-tree/nvim-web-devicons", lazy = true },
-    { "echasnovski/mini.icons", version = "*", lazy = true },
+    -- Icons: one set, one source of truth. nvim-web-devicons and mini.icons were
+    -- both declared before (mini.icons was never even required). mini.icons
+    -- impersonates devicons so dependent plugins keep working.
+    {
+        "echasnovski/mini.icons",
+        version = "*",
+        lazy = true,
+        init = function()
+            package.preload["nvim-web-devicons"] = function()
+                require("mini.icons").mock_nvim_web_devicons()
+                return package.loaded["nvim-web-devicons"]
+            end
+        end,
+        opts = {},
+    },
 
-    -- Status line
+    -- Status line.
+    --
+    -- Two fixes: the theme was "cyberdream" (blue/magenta/orange) while the
+    -- editor loads "hack" (teal) -- the statusline was literally a different
+    -- colorscheme. And ten components is about six too many: `encoding` reads
+    -- utf-8 forever, `fileformat` reads unix forever, and `progress` duplicates
+    -- `location`. Mode is a single letter because the colour already tells you.
     {
         "nvim-lualine/lualine.nvim",
-        dependencies = {
-            "nvim-tree/nvim-web-devicons",
-            "arkav/lualine-lsp-progress",
-        },
         event = "VeryLazy",
         config = function()
+            local p = _G.HackPalette
+            local theme = "auto"
+
+            if p then
+                local mid = { bg = p.bg_alt, fg = p.fg_muted }
+                local tail = { bg = p.bg_alt, fg = p.fg_dim }
+                theme = {
+                    normal = { a = { fg = p.bg, bg = p.teal_hi, gui = "bold" }, b = mid, c = tail },
+                    insert = { a = { fg = p.bg, bg = p.sage, gui = "bold" }, b = mid, c = tail },
+                    visual = { a = { fg = p.bg, bg = p.amber, gui = "bold" }, b = mid, c = tail },
+                    replace = { a = { fg = p.bg, bg = p.coral, gui = "bold" }, b = mid, c = tail },
+                    command = { a = { fg = p.bg, bg = p.lavender, gui = "bold" }, b = mid, c = tail },
+                    inactive = {
+                        a = { bg = p.bg_alt, fg = p.fg_dim },
+                        b = { bg = p.bg_alt, fg = p.fg_dim },
+                        c = { bg = p.bg_alt, fg = p.fg_subtle },
+                    },
+                }
+            end
+
             require("lualine").setup({
                 options = {
-                    theme = "cyberdream",
+                    theme = theme,
                     globalstatus = true,
-                    section_separators = { left = "", right = "" },
-                    component_separators = { left = "", right = "" },
+                    section_separators = "",
+                    component_separators = "",
+                    disabled_filetypes = { statusline = { "snacks_dashboard" } },
                 },
                 sections = {
-                    lualine_a = { { "mode", separator = { left = "", right = "" } } },
-                    lualine_b = { "branch", "diff", "diagnostics" },
+                    lualine_a = {
+                        { "mode", fmt = function(s) return " " .. s:sub(1, 1) .. " " end, padding = 0 },
+                    },
+                    lualine_b = { { "branch", icon = "" } },
                     lualine_c = {
-                        { "filename", file_status = true, path = 1 },
                         {
-                            "lsp_progress",
-                            display_components = { "lsp_client_name", "spinner", "percentage" },
+                            "filename",
+                            path = 1,
+                            symbols = { modified = " ●", readonly = "  ", newfile = "  " },
                         },
                     },
                     lualine_x = {
                         {
+                            "diagnostics",
+                            symbols = { error = " ", warn = " ", info = " ", hint = "󰌵 " },
+                        },
+                        { "diff", symbols = { added = "+", modified = "~", removed = "-" } },
+                        {
                             function()
-                                local open = _G.ClaudeSidebar and _G.ClaudeSidebar.is_open()
-                                return open and "󱙺 Claude" or ""
-                            end,
-                            cond = function()
-                                return _G.ClaudeSidebar ~= nil and _G.ClaudeSidebar.is_open()
+                                return (_G.ClaudeSidebar and _G.ClaudeSidebar.is_open()) and "󱙺" or ""
                             end,
                         },
-                        "encoding",
-                        "fileformat",
-                        "filetype",
                     },
-                    lualine_y = { "progress" },
-                    lualine_z = { { "location", separator = { left = "", right = "" } } },
+                    lualine_y = {},
+                    lualine_z = { { "location", padding = 1 } },
                 },
                 inactive_sections = {
                     lualine_a = {},
                     lualine_b = {},
                     lualine_c = { "filename" },
-                    lualine_x = { "location" },
+                    lualine_x = {},
                     lualine_y = {},
                     lualine_z = {},
                 },
-                extensions = { "nvim-tree", "quickfix", "toggleterm", "lazy" },
+                extensions = { "nvim-tree", "quickfix", "toggleterm", "lazy", "trouble" },
             })
         end,
     },
 
-    -- Buffer tabs
-    {
-        "romgrk/barbar.nvim",
-        dependencies = { "nvim-tree/nvim-web-devicons" },
-        event = "VeryLazy",
-        keys = {
-            { "[b", ":BufferPrevious<CR>", desc = "Previous buffer", silent = true },
-            { "]b", ":BufferNext<CR>", desc = "Next buffer", silent = true },
-            { "<leader>b1", ":BufferGoto 1<CR>", desc = "Go to buffer 1", silent = true },
-            { "<leader>b2", ":BufferGoto 2<CR>", desc = "Go to buffer 2", silent = true },
-            { "<leader>b3", ":BufferGoto 3<CR>", desc = "Go to buffer 3", silent = true },
-            { "<leader>b4", ":BufferGoto 4<CR>", desc = "Go to buffer 4", silent = true },
-            { "<leader>b5", ":BufferGoto 5<CR>", desc = "Go to buffer 5", silent = true },
-            { "<leader>b6", ":BufferGoto 6<CR>", desc = "Go to buffer 6", silent = true },
-            { "<leader>b7", ":BufferGoto 7<CR>", desc = "Go to buffer 7", silent = true },
-            { "<leader>b8", ":BufferGoto 8<CR>", desc = "Go to buffer 8", silent = true },
-            { "<leader>b9", ":BufferGoto 9<CR>", desc = "Go to buffer 9", silent = true },
-            { "<leader>bc", ":BufferClose<CR>", desc = "Close current buffer", silent = true },
-            { "<leader>bp", ":BufferPick<CR>", desc = "Pick a buffer", silent = true },
-            { "<leader>br", ":BufferMoveNext<CR>", desc = "Move buffer right", silent = true },
-            { "<leader>bl", ":BufferMovePrevious<CR>", desc = "Move buffer left", silent = true },
-        },
-    },
+    -- barbar.nvim removed.
+    --
+    -- laststatus=3 exists to give one seamless global statusline; pinning a
+    -- full-width tabline to row 1 undid exactly that. Harpoon (<M-1>..<M-4>)
+    -- plus <leader><leader> is a better model anyway: name the four files that
+    -- matter instead of scrolling everything you accidentally opened.
+    -- lualine-lsp-progress went with it -- a spinner, percentage and client name
+    -- is three moving elements for something you glance at twice a day.
 
     -- File explorer
     {
         "nvim-tree/nvim-tree.lua",
-        dependencies = { "nvim-tree/nvim-web-devicons" },
         keys = {
             { "<leader>e", "<cmd>NvimTreeToggle<cr>", desc = "Toggle file explorer" },
         },
@@ -96,21 +115,15 @@ return {
                 hijack_netrw = false,
                 disable_netrw = false,
                 hijack_directories = { enable = false, auto_open = false },
-                view = {
-                    width = 32,
-                    side = "left",
-                },
+                view = { width = 32, side = "left" },
                 renderer = {
                     highlight_git = "name",
                     highlight_diagnostics = "name",
                     indent_markers = { enable = true },
                     icons = {
-                        -- Disable inline diagnostic icons in the tree;
-                        -- their signcolumn placement triggers E155 errors.
-                        -- Filename highlight via highlight_diagnostics still works.
-                        show = {
-                            diagnostics = false,
-                        },
+                        -- Inline diagnostic icons trigger E155 via sign_place;
+                        -- filename highlighting via highlight_diagnostics still works.
+                        show = { diagnostics = false },
                         glyphs = {
                             default = "󰈙",
                             symlink = "",
@@ -147,156 +160,50 @@ return {
                     custom = { "^.git$", "node_modules", "__pycache__" },
                 },
                 git = { enable = true, ignore = false },
-                actions = {
-                    open_file = { quit_on_open = false, resize_window = true },
-                },
+                actions = { open_file = { quit_on_open = false, resize_window = true } },
             })
         end,
     },
 
-    -- Which-key: shows pending keybindings
+    -- Which-key.
+    --
+    -- Only group definitions live here now. The ~120 `desc =` lines this block
+    -- used to carry were duplicates: which-key reads descriptions straight off
+    -- each `keys` entry and `vim.keymap.set` call, so maintaining them twice
+    -- only guaranteed they would drift apart.
     {
         "folke/which-key.nvim",
         event = "VeryLazy",
-        config = function()
-            local wk = require("which-key")
-            wk.setup({
-                icons = { group = " " },
-            })
-            wk.add({
-                -- ─── Leader prefix groups ─────────────────────────────
-                { "<leader>a",  group = "AI (Claude)",       icon = "󱙺 " },
-                { "<leader>aa", desc = "Toggle Claude sidebar" },
-                { "<leader>af", desc = "Focus Claude sidebar" },
-                { "<leader>at", desc = "Toggle Claude sidebar" },
-                { "<leader>aq", desc = "Close Claude sidebar" },
-
-                { "<leader>b",  group = "Buffers",          icon = " " },
-                { "<leader>bc", desc = "Close current buffer" },
-                { "<leader>bp", desc = "Pick a buffer" },
-                { "<leader>br", desc = "Move buffer right" },
-                { "<leader>bl", desc = "Move buffer left" },
-
-                { "<leader>c",  group = "Code",             icon = " " },
-                { "<leader>ca", desc = "Code actions" },
-                { "<leader>co", desc = "Toggle code outline" },
-
-                { "<leader>d",  group = "Delete",           icon = " " },
-                { "<leader>da", desc = "Delete entire file contents" },
-
-                { "<leader>f",  group = "Find (Telescope)", icon = " " },
-                { "<leader>ff", desc = "Find files" },
-                { "<leader>fg", desc = "Search text (grep)" },
-                { "<leader>fb", desc = "List open buffers" },
-                { "<leader>fh", desc = "Search help tags" },
-                { "<leader>fm", desc = "Search media files" },
-                { "<leader>fo", desc = "Recently opened files" },
-                { "<leader>fk", desc = "Show all key mappings" },
-                { "<leader>fq", desc = "Show quickfix list" },
-                { "<leader>fl", desc = "Show location list" },
-                { "<leader>fc", desc = "Search nvim config files" },
-                { "<leader>fd", desc = "Show diagnostics" },
-                { "<leader>fr", desc = "Show LSP references" },
-                { "<leader>fp", desc = "Search projects" },
-                { "<leader>fB", desc = "Open file browser" },
-                { "<leader>fH", desc = "Show command history" },
-                { "<leader>fR", desc = "Show registers" },
-
-                { "<leader>g",  group = "Git / Diff review", icon = " " },
-                { "<leader>gs", desc = "Git status" },
-                { "<leader>gb", desc = "Git branches" },
-                { "<leader>gc", desc = "Git commits" },
-                { "<leader>gf", desc = "Git tracked files" },
-                { "<leader>gD", desc = "Review all changes (diff view)" },
-                { "<leader>gH", desc = "File history (current file)" },
-                { "<leader>gQ", desc = "Close diff view" },
-                { "<leader>gm", desc = "List modified files (quickfix)" },
-                { "<leader>gp", desc = "Preview hunk" },
-                { "<leader>gi", desc = "Preview hunk inline" },
-                { "<leader>gsh", desc = "Stage hunk" },
-                { "<leader>guh", desc = "Reset hunk (undo)" },
-                { "<leader>gS", desc = "Stage entire buffer" },
-                { "<leader>gr", desc = "Reset entire buffer" },
-                { "<leader>gB", desc = "Toggle line blame" },
-                { "<leader>gd", desc = "Toggle deleted lines" },
-                { "<leader>gw", desc = "Toggle word diff" },
-                { "<leader>gl", desc = "Toggle git line highlights" },
-                { "<leader>gbl", desc = "Blame current line" },
-
-                { "<leader>h",  group = "Harpoon",          icon = "󰛢 " },
-                { "<leader>ha", desc = "Add file to Harpoon" },
-                { "<leader>hh", desc = "Toggle Harpoon menu" },
-                { "<leader>hc", desc = "Clear search highlights" },
-
-                { "<leader>l",  group = "LSP",              icon = " " },
-                { "<leader>ld", desc = "Document symbols" },
-                { "<leader>le", desc = "Show line diagnostic (popup)" },
-                { "<leader>lL", desc = "Toggle diagnostic display mode" },
-
-                { "<leader>r",  group = "Refactor",         icon = " " },
-                { "<leader>rn", desc = "Rename symbol" },
-
-                { "<leader>t",  group = "Terminal / Treesj", icon = " " },
-                { "<leader>tt", desc = "Toggle terminal" },
-                { "<leader>ts", desc = "Split block into lines" },
-                { "<leader>tj", desc = "Join block into one line" },
-
-                { "<leader>y",  group = "Yank",             icon = " " },
-                { "<leader>ya", desc = "Yank entire file" },
-
-                -- ─── Standalone leader keys ───────────────────────────
-                { "<leader>e",  desc = "Toggle file explorer" },
-                { "<leader>w",  desc = "Save file" },
-                { "<leader>q",  desc = "Quit" },
-                { "<leader>x",  desc = "Dismiss notifications" },
-
-                -- ─── Non-leader keys (for reference) ─────────────────
-                { "g",          group = "Go to / LSP" },
-                { "gd",         desc = "Go to definition" },
-                { "gr",         desc = "Show references" },
-                { "gi",         desc = "Go to implementation" },
-                { "gk",         desc = "Hover documentation" },
-
-                { "[b",         desc = "Previous buffer" },
-                { "]b",         desc = "Next buffer" },
-                { "[c",         desc = "Prev git change" },
-                { "]c",         desc = "Next git change" },
-                { "[q",         desc = "Prev quickfix item" },
-                { "]q",         desc = "Next quickfix item" },
-                { "s",          desc = "Leap forward" },
-                { "S",          desc = "Leap backward" },
-
-                -- ─── Ctrl shortcuts ──────────────────────────────────
-                { "<C-l>",      desc = "AI: Toggle Claude sidebar" },
-                { "<C-\\>",     desc = "Toggle terminal" },
-            })
-        end,
-    },
-
-    -- Notifications
-    {
-        "rcarriga/nvim-notify",
-        event = "VeryLazy",
-        keys = {
-            {
-                "<leader>x",
-                function() require("notify").dismiss() end,
-                desc = "Close all notifications",
+        opts = {
+            preset = "helix",
+            delay = 300,
+            -- Text only. which-key's default icon-per-mapping turns the popup
+            -- into emoji soup; typographic reads as more deliberate.
+            icons = { mappings = false, group = "" },
+            win = { border = "rounded" },
+            sort = { "local", "order", "group", "alphanum" },
+            spec = {
+                { "<leader>a", group = "AI (Claude)" },
+                { "<leader>c", group = "Code" },
+                { "<leader>d", group = "Debug" },
+                { "<leader>f", group = "Find (Telescope)" },
+                { "<leader>g", group = "Git" },
+                { "<leader>h", group = "Harpoon" },
+                { "<leader>j", group = "Split / Join" },
+                { "<leader>l", group = "LSP" },
+                { "<leader>n", group = "Tests" },
+                { "<leader>p", group = "Project / Session" },
+                { "<leader>r", group = "Refactor" },
+                { "<leader>s", group = "Search & Replace" },
+                { "<leader>t", group = "Terminal" },
+                { "<leader>x", group = "Diagnostics (Trouble)" },
+                { "<leader>y", group = "Yank" },
+                { "g", group = "Goto / LSP" },
             },
         },
-        config = function()
-            require("notify").setup({
-                background_colour = "#000000",
-                render = "wrapped-compact",
-                stages = "fade_in_slide_out",
-                timeout = 3000,
-                max_width = 60,
-                top_down = true,
-            })
-            vim.notify = require("notify")
-        end,
     },
 
-    -- Better UI for select/input dialogs
-    { "stevearc/dressing.nvim", event = "VeryLazy" },
+    -- nvim-notify and dressing.nvim removed: snacks.notifier and snacks.input
+    -- replace them and inherit the NormalFloat/FloatBorder styling that
+    -- colors/hack.lua already defines.
 }

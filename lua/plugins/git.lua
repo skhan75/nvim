@@ -19,32 +19,35 @@ return {
                         vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
                     end
 
-                    -- ── Fast hunk navigation ──────────────────────────
-                    bmap("n", "]c", function()
-                        if vim.wo.diff then return "]c" end
-                        vim.schedule(function() gs.nav_hunk("next") end)
-                        return "<Ignore>"
-                    end, "Next git change")
-                    bmap("n", "[c", function()
-                        if vim.wo.diff then return "[c" end
-                        vim.schedule(function() gs.nav_hunk("prev") end)
-                        return "<Ignore>"
-                    end, "Prev git change")
+                    -- ── Hunk navigation ───────────────────────────────
+                    -- Moved off ]c/[c, which belong to native diff mode. The
+                    -- old maps tried to fall through to native diff by
+                    -- returning "]c" from the callback, but that only works
+                    -- with expr = true, which was never set -- so the return
+                    -- value was discarded and ]c/[c were dead keys inside
+                    -- Diffview.
+                    bmap("n", "]h", function() gs.nav_hunk("next") end, "Next git hunk")
+                    bmap("n", "[h", function() gs.nav_hunk("prev") end, "Prev git hunk")
 
                     -- ── Hunk actions ──────────────────────────────────
+                    -- <leader>gh / <leader>gL avoid the prefix collisions the
+                    -- old <leader>gsh and <leader>gbl created with the
+                    -- Telescope <leader>gs and <leader>gb pickers, each of
+                    -- which used to stall for the full timeoutlen.
                     bmap("n", "<leader>gp", gs.preview_hunk, "Preview hunk")
                     bmap("n", "<leader>gi", gs.preview_hunk_inline, "Preview hunk inline")
-                    bmap("n", "<leader>gsh", gs.stage_hunk, "Stage hunk")
-                    bmap("n", "<leader>guh", gs.reset_hunk, "Reset hunk (undo)")
+                    bmap("n", "<leader>gh", gs.stage_hunk, "Stage hunk")
+                    bmap("n", "<leader>gu", gs.reset_hunk, "Reset hunk (undo)")
+                    bmap("v", "<leader>gh", function()
+                        gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
+                    end, "Stage selected lines")
                     bmap("n", "<leader>gS", gs.stage_buffer, "Stage entire buffer")
-                    bmap("n", "<leader>gr", gs.reset_buffer, "Reset entire buffer")
+                    bmap("n", "<leader>gR", gs.reset_buffer, "Reset entire buffer")
 
                     -- ── Toggles ───────────────────────────────────────
                     bmap("n", "<leader>gB", gs.toggle_current_line_blame, "Toggle line blame")
-                    bmap("n", "<leader>gd", gs.toggle_deleted, "Toggle deleted lines")
+                    bmap("n", "<leader>gL", gs.blame_line, "Blame current line")
                     bmap("n", "<leader>gw", gs.toggle_word_diff, "Toggle word diff")
-                    bmap("n", "<leader>gl", gs.toggle_linehl, "Toggle git line highlights")
-                    bmap("n", "<leader>gbl", gs.blame_line, "Blame current line")
                 end,
             })
         end,

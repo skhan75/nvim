@@ -1,17 +1,18 @@
 -- Hack: cyberpunk teal colorscheme inspired by ~/.config/ghostty/themes/hack
 -- Built around the ghostty palette with selective warm accents for readability
 --
--- Transparency: set `vim.g.hack_transparent = true` (in init.lua) to let the
--- terminal background show through. Popups/floats/statusline keep their bg
--- for readability. Actual see-through is controlled by your terminal
--- (ghostty: background-opacity).
+-- Transparency: OFF by default. Set `vim.g.hack_transparent = true` before the
+-- colorscheme loads to let the terminal background show through (ghostty:
+-- background-opacity). It defaulted to ON while this comment said otherwise,
+-- and several groups punched opaque holes through it, so the result was
+-- half-transparent -- which reads as broken rather than deliberate.
 
 vim.cmd("hi clear")
 if vim.fn.exists("syntax_on") then vim.cmd("syntax reset") end
 vim.o.background = "dark"
 vim.g.colors_name = "hack"
 
-local transparent = vim.g.hack_transparent ~= false  -- default: on
+local transparent = vim.g.hack_transparent == true  -- default: off
 
 local c = {
     -- ── Backgrounds ───────────────────────────────────────────────────
@@ -79,14 +80,14 @@ hi("Folded",        { fg = c.fg_muted, bg = c.bg_alt })
 hi("FoldColumn",    { fg = c.fg_subtle, bg = main_bg })
 hi("VertSplit",     { fg = c.bg_grid, bg = main_bg })
 hi("WinSeparator",  { fg = c.bg_grid, bg = main_bg })
-hi("EndOfBuffer",   { fg = main_bg, bg = main_bg })
+hi("EndOfBuffer",   { fg = main_bg, bg = main_bg })  -- eob fillchar is a space
 hi("Cursor",        { fg = c.bg, bg = c.teal_hi })
 hi("lCursor",       { fg = c.bg, bg = c.teal_hi })
 hi("TermCursor",    { fg = c.bg, bg = c.teal_hi })
 
 -- ── Selection & Search ───────────────────────────────────────────────
 -- Matches ghostty selection: bright cyan bg, dark fg
-hi("Visual",        { fg = c.bg, bg = c.fg_bright })
+hi("Visual",        { bg = c.bg_selection })
 hi("VisualNOS",     { fg = c.bg, bg = c.fg_bright })
 hi("Search",        { fg = c.bg, bg = c.amber, bold = true })
 hi("IncSearch",     { fg = c.bg, bg = c.teal_hi, bold = true })
@@ -125,10 +126,10 @@ hi("DiagnosticUnderlineError",   { undercurl = true, sp = c.coral })
 hi("DiagnosticUnderlineWarn",    { undercurl = true, sp = c.amber })
 hi("DiagnosticUnderlineInfo",    { undercurl = true, sp = c.teal_6 })
 hi("DiagnosticUnderlineHint",    { undercurl = true, sp = c.lavender })
-hi("DiagnosticSignError",        { fg = c.coral, bg = c.bg })
-hi("DiagnosticSignWarn",         { fg = c.amber, bg = c.bg })
-hi("DiagnosticSignInfo",         { fg = c.teal_6, bg = c.bg })
-hi("DiagnosticSignHint",         { fg = c.lavender, bg = c.bg })
+hi("DiagnosticSignError",        { fg = c.coral, bg = main_bg })
+hi("DiagnosticSignWarn",         { fg = c.amber, bg = main_bg })
+hi("DiagnosticSignInfo",         { fg = c.teal_6, bg = main_bg })
+hi("DiagnosticSignHint",         { fg = c.lavender, bg = main_bg })
 
 -- ── Diff ─────────────────────────────────────────────────────────────
 hi("DiffAdd",       { fg = c.sage,    bg = c.diff_add })
@@ -163,13 +164,13 @@ hi("Number",        { fg = c.rose })
 hi("Float",         { fg = c.rose })
 hi("Boolean",       { fg = c.sage, italic = true })
 hi("Identifier",    { fg = c.fg })
-hi("Function",      { fg = c.teal_hi, bold = true })
-hi("Statement",     { fg = c.teal_6, bold = true })
+hi("Function",      { fg = c.teal_hi })
+hi("Statement",     { fg = c.teal_6 })
 hi("Conditional",   { fg = c.teal_6 })
 hi("Repeat",        { fg = c.teal_6 })
 hi("Label",         { fg = c.teal_5 })
 hi("Operator",      { fg = c.teal_4 })
-hi("Keyword",       { fg = c.teal_6, bold = true })
+hi("Keyword",       { fg = c.teal_6 })
 hi("Exception",     { fg = c.coral, bold = true })
 hi("PreProc",       { fg = c.lavender })
 hi("Include",       { fg = c.lavender })
@@ -188,34 +189,34 @@ hi("Delimiter",     { fg = c.fg_muted })
 hi("Debug",         { fg = c.coral })
 hi("Underlined",    { underline = true, fg = c.teal_6 })
 hi("Error",         { fg = c.coral, bold = true })
-hi("Todo",          { fg = c.bg, bg = c.amber, bold = true })
+hi("Todo",          { fg = c.amber, bold = true })
 
 -- ── Treesitter ───────────────────────────────────────────────────────
 hi("@comment",                  { fg = c.fg_dim, italic = true })
 hi("@comment.documentation",    { fg = c.fg_muted, italic = true })
-hi("@comment.todo",             { fg = c.bg, bg = c.teal_6, bold = true })
-hi("@comment.warning",          { fg = c.bg, bg = c.amber, bold = true })
-hi("@comment.error",            { fg = c.bg, bg = c.coral, bold = true })
-hi("@comment.note",             { fg = c.bg, bg = c.teal_5, bold = true })
+hi("@comment.todo",             { fg = c.teal_6, bold = true })
+hi("@comment.warning",          { fg = c.amber, bold = true })
+hi("@comment.error",            { fg = c.coral, bold = true })
+hi("@comment.note",             { fg = c.teal_5, bold = true })
 
-hi("@keyword",                  { fg = c.teal_6, bold = true })
-hi("@keyword.return",           { fg = c.coral, bold = true })
+hi("@keyword",                  { fg = c.teal_6 })
+hi("@keyword.return",           { fg = c.coral })
 hi("@keyword.conditional",      { fg = c.teal_6 })
 hi("@keyword.repeat",           { fg = c.teal_6 })
 hi("@keyword.import",           { fg = c.lavender })
 hi("@keyword.modifier",         { fg = c.teal_5, italic = true })
-hi("@keyword.function",         { fg = c.teal_6, bold = true })
+hi("@keyword.function",         { fg = c.teal_6 })
 hi("@keyword.operator",         { fg = c.teal_4 })
 hi("@keyword.exception",        { fg = c.coral, bold = true })
 hi("@keyword.coroutine",        { fg = c.teal_6, italic = true })
 
-hi("@function",                 { fg = c.teal_hi, bold = true })
+hi("@function",                 { fg = c.teal_hi })
 hi("@function.call",            { fg = c.teal_6 })
-hi("@function.builtin",         { fg = c.teal_hi, bold = true, italic = true })
+hi("@function.builtin",         { fg = c.teal_hi, italic = true })
 hi("@function.macro",           { fg = c.lavender_dim })
-hi("@function.method",          { fg = c.teal_hi, bold = true })
+hi("@function.method",          { fg = c.teal_hi })
 hi("@function.method.call",     { fg = c.teal_6 })
-hi("@method",                   { fg = c.teal_hi, bold = true })
+hi("@method",                   { fg = c.teal_hi })
 hi("@method.call",              { fg = c.teal_6 })
 
 hi("@parameter",                { fg = c.fg, italic = true })
@@ -226,9 +227,9 @@ hi("@variable.member",          { fg = c.teal_5 })
 
 hi("@type",                     { fg = c.lavender })
 hi("@type.builtin",             { fg = c.lavender, italic = true })
-hi("@type.definition",          { fg = c.lavender, bold = true })
+hi("@type.definition",          { fg = c.lavender })
 hi("@type.qualifier",           { fg = c.teal_5, italic = true })
-hi("@constructor",              { fg = c.lavender, bold = true })
+hi("@constructor",              { fg = c.lavender })
 
 hi("@namespace",                { fg = c.lavender_dim })
 hi("@module",                   { fg = c.lavender_dim })
@@ -310,7 +311,7 @@ hi("@text.warning",             { fg = c.amber, bold = true })
 hi("@text.danger",              { fg = c.coral, bold = true })
 
 -- ── LSP Semantic Tokens ──────────────────────────────────────────────
-hi("@lsp.type.function",        { fg = c.teal_hi, bold = true })
+hi("@lsp.type.function",        { fg = c.teal_hi })
 hi("@lsp.type.method",          { fg = c.teal_hi })
 hi("@lsp.type.variable",        { fg = c.fg })
 hi("@lsp.type.parameter",       { fg = c.fg, italic = true })
@@ -320,7 +321,7 @@ hi("@lsp.type.interface",       { fg = c.lavender })
 hi("@lsp.type.struct",          { fg = c.lavender })
 hi("@lsp.type.enum",            { fg = c.lavender })
 hi("@lsp.type.enumMember",      { fg = c.rose })
-hi("@lsp.type.keyword",         { fg = c.teal_6, bold = true })
+hi("@lsp.type.keyword",         { fg = c.teal_6 })
 hi("@lsp.type.comment",         { fg = c.fg_dim, italic = true })
 hi("@lsp.type.string",          { fg = c.amber })
 hi("@lsp.type.number",          { fg = c.rose })
@@ -508,3 +509,48 @@ hi("RenderMarkdownH5",          { fg = c.amber, bold = true })
 hi("RenderMarkdownH6",          { fg = c.rose, bold = true })
 hi("RenderMarkdownCode",        { bg = c.bg_alt })
 hi("RenderMarkdownCodeInline",  { fg = c.amber, bg = c.bg_alt })
+
+-- ── Snacks (indent / notifier / dashboard / dim / statuscolumn) ──────
+-- These replaced indent-blankline, nvim-notify, dressing and alpha, and had no
+-- groups defined here, so they were rendering against fallbacks.
+hi("SnacksIndent",              { fg = c.bg_indent })
+hi("SnacksIndentScope",         { fg = c.teal_2 })
+hi("SnacksNotifierInfo",        { fg = c.teal_6,   bg = c.bg_dark })
+hi("SnacksNotifierWarn",        { fg = c.amber,    bg = c.bg_dark })
+hi("SnacksNotifierError",       { fg = c.coral,    bg = c.bg_dark })
+hi("SnacksNotifierDebug",       { fg = c.fg_dim,   bg = c.bg_dark })
+hi("SnacksNotifierTrace",       { fg = c.lavender, bg = c.bg_dark })
+hi("SnacksNotifierBorderInfo",  { fg = c.teal_2,   bg = c.bg_dark })
+hi("SnacksNotifierBorderWarn",  { fg = c.amber_dim, bg = c.bg_dark })
+hi("SnacksNotifierBorderError", { fg = c.coral,    bg = c.bg_dark })
+-- Dashboard: one colour, no gradient. The old alpha header used cyberdream's
+-- cyan->magenta->orange ramp, which appeared nowhere else on screen.
+hi("SnacksDashboardHeader",     { fg = c.teal_hi })
+hi("SnacksDashboardIcon",       { fg = c.teal_5 })
+hi("SnacksDashboardKey",        { fg = c.amber })
+hi("SnacksDashboardDesc",       { fg = c.fg_muted })
+hi("SnacksDashboardFooter",     { fg = c.fg_dim, italic = true })
+hi("SnacksDashboardTitle",      { fg = c.teal_6 })
+hi("SnacksDim",                 { fg = c.fg_subtle })
+hi("SnacksInputBorder",         { fg = c.teal_2, bg = c.bg_dark })
+hi("SnacksInputTitle",          { fg = c.teal_hi, bg = c.bg_dark })
+
+-- ── Which-key ────────────────────────────────────────────────────────
+hi("WhichKeyNormal",            { bg = c.bg_dark })
+hi("WhichKeyBorder",            { fg = c.teal_2, bg = c.bg_dark })
+hi("WhichKeyTitle",             { fg = c.teal_hi, bg = c.bg_dark })
+hi("WhichKeyGroup",             { fg = c.lavender })
+hi("WhichKeyDesc",              { fg = c.fg })
+hi("WhichKey",                  { fg = c.amber })
+hi("WhichKeySeparator",         { fg = c.fg_subtle })
+
+-- ── Winbar / Trouble / yank flash ────────────────────────────────────
+hi("WinBar",                    { fg = c.fg_muted,  bg = main_bg })
+hi("WinBarNC",                  { fg = c.fg_subtle, bg = main_bg })
+hi("ClaudeTitle",               { fg = c.teal_hi, bold = true })
+hi("TroubleNormal",             { bg = c.bg_alt })
+hi("TroubleText",               { fg = c.fg })
+hi("TroubleCount",              { fg = c.lavender, bg = c.bg_surface })
+-- Dedicated yank highlight. This used IncSearch (dark-on-#66FFFF, bold), which
+-- strobed the whole line on every yank.
+hi("YankFlash",                 { bg = c.bg_selection })

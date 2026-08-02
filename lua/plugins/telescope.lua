@@ -4,9 +4,11 @@ return {
         dependencies = {
             "nvim-lua/plenary.nvim",
             { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
-            "nvim-telescope/telescope-media-files.nvim",
             "nvim-telescope/telescope-file-browser.nvim",
             "nvim-telescope/telescope-project.nvim",
+            -- telescope-media-files removed: unmaintained since Feb 2023, it
+            -- shells out to ueberzug/chafa (neither installed), and it cannot
+            -- render images under WSL2 anyway.
         },
         cmd = "Telescope",
         keys = {
@@ -15,8 +17,13 @@ return {
             { "<leader>fg", "<cmd>Telescope live_grep<cr>", desc = "Search text in files" },
             { "<leader>fb", "<cmd>Telescope buffers<cr>", desc = "List open buffers" },
             { "<leader>fh", "<cmd>Telescope help_tags<cr>", desc = "Search help tags" },
-            { "<leader>fm", "<cmd>Telescope media_files<cr>", desc = "Search media files" },
             { "<leader>fB", "<cmd>Telescope file_browser<cr>", desc = "Open file browser" },
+            -- Grep the word under the cursor / the visual selection. Removes a
+            -- yank-then-paste-into-the-prompt round trip done many times a day.
+            { "<leader>fw", "<cmd>Telescope grep_string<cr>", desc = "Grep word under cursor" },
+            { "<leader>fw", "<cmd>Telescope grep_string<cr>", mode = "x", desc = "Grep selection" },
+            { "<leader>fs", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", desc = "Workspace symbols" },
+            { "<leader>f'", "<cmd>Telescope marks<cr>", desc = "Marks" },
             { "<leader>fp", "<cmd>Telescope project<cr>", desc = "Search projects" },
             { "<leader>fo", "<cmd>Telescope oldfiles<cr>", desc = "Recently opened files" },
             { "<leader>fk", "<cmd>Telescope keymaps<cr>", desc = "Show key mappings" },
@@ -144,10 +151,6 @@ return {
                         override_file_sorter = true,
                         case_mode = "smart_case",
                     },
-                    media_files = {
-                        filetypes = { "png", "jpg", "mp4", "webm", "pdf" },
-                        find_cmd = "rg",
-                    },
                     project = {
                         base_dirs = { "~/workspace" },
                         hidden_files = true,
@@ -158,7 +161,6 @@ return {
                 },
             })
             telescope.load_extension("fzf")
-            telescope.load_extension("media_files")
             telescope.load_extension("file_browser")
             telescope.load_extension("project")
         end,
