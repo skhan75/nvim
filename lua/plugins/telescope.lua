@@ -39,6 +39,29 @@ return {
             local telescope = require("telescope")
             local actions = require("telescope.actions")
 
+            -- Pick the fastest file lister that actually exists on this machine.
+            -- `fd` was hardcoded, but it is not installed here (Debian/Ubuntu
+            -- ship it as `fdfind`), which made <leader>ff fail outright.
+            -- Returning nil lets Telescope fall back to its own default.
+            local function find_command()
+                local excludes = { "--exclude=.git", "--exclude=node_modules" }
+                for _, bin in ipairs({ "fd", "fdfind" }) do
+                    if vim.fn.executable(bin) == 1 then
+                        return vim.list_extend(
+                            { bin, "--type=f", "--hidden", "--strip-cwd-prefix" },
+                            excludes
+                        )
+                    end
+                end
+                if vim.fn.executable("rg") == 1 then
+                    return {
+                        "rg", "--files", "--hidden",
+                        "--glob=!**/.git/*", "--glob=!**/node_modules/*",
+                    }
+                end
+                return nil
+            end
+
             telescope.setup({
                 defaults = {
                     -- Use ripgrep for live_grep, including hidden files but skipping .git
@@ -98,12 +121,9 @@ return {
                     },
                 },
                 pickers = {
-                    -- Use fd for file listing — fastest option, respects .gitignore
+                    -- Fastest available lister (fd → fdfind → rg → built-in)
                     find_files = {
-                        find_command = {
-                            "fd", "--type=f", "--hidden", "--strip-cwd-prefix",
-                            "--exclude=.git", "--exclude=node_modules",
-                        },
+                        find_command = find_command(),
                     },
                     buffers = {
                         sort_lastused = true,

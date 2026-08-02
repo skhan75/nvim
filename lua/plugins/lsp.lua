@@ -18,87 +18,104 @@ return {
             "hrsh7th/cmp-nvim-lsp",
         },
         config = function()
-            local lspconfig = require("lspconfig")
+            -- ── Compat: nested root_marker groups ──────────────────────────
+            -- nvim-lspconfig feeds *nested* marker groups ({{...},{...}}) to
+            -- lua_ls / jdtls / emmylua_ls / ocamllsp on any build reporting
+            -- nvim-0.11.3+. Some 0.12-dev builds report that yet ship a
+            -- vim.fs.root which only understands a flat list, so every file
+            -- open raised "invalid value (table) at index 2 ... for 'concat'"
+            -- and no server ever attached. Flatten on affected builds only --
+            -- this mirrors nvim-lspconfig's own pre-0.11.3 fallback.
+            if not pcall(vim.fs.root, (vim.uv or vim.loop).cwd(), { { ".git" } }) then
+                local orig_root = vim.fs.root
+                vim.fs.root = function(source, marker)
+                    if type(marker) == "table" then
+                        local flat, nested = {}, false
+                        for _, group in ipairs(marker) do
+                            if type(group) == "table" then
+                                nested = true
+                                for _, m in ipairs(group) do
+                                    flat[#flat + 1] = m
+                                end
+                            else
+                                flat[#flat + 1] = group
+                            end
+                        end
+                        if nested then
+                            marker = flat
+                        end
+                    end
+                    return orig_root(source, marker)
+                end
+            end
+
+            -- ── Server configuration (Neovim 0.11+ vim.lsp.config API) ─────
+            -- mason-lspconfig v2 removed the `handlers` option, so the old
+            -- handler table silently never ran: no cmp capabilities, no
+            -- per-server settings. Configure servers directly instead, then
+            -- let mason-lspconfig enable whatever is installed.
             local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
-            local default_opts = {
+            vim.lsp.config("*", {
                 capabilities = capabilities,
                 flags = { debounce_text_changes = 150 },
-            }
+            })
 
-            -- Mason-lspconfig bridge: auto-install servers and set them up via handlers
+            -- TypeScript: filter out noisy diagnostics
+            vim.lsp.config("ts_ls", {
+                handlers = {
+                    ["textDocument/publishDiagnostics"] = function(_, result, ctx, cfg)
+                        result.diagnostics = vim.tbl_filter(function(d)
+                            return not d.message:match("Could not find a declaration file for module")
+                                and not d.message:match("it may be converted to an ES module")
+                        end, result.diagnostics)
+                        vim.lsp.handlers["textDocument/publishDiagnostics"](_, result, ctx, cfg)
+                    end,
+                },
+            })
+
+            -- ESLint
+            vim.lsp.config("eslint", {
+                settings = {
+                    codeAction = {
+                        disableRuleComment = { enable = true, location = "separateLine" },
+                        showDocumentation = { enable = true },
+                    },
+                },
+            })
+
+            -- Lua: Neovim development settings
+            vim.lsp.config("lua_ls", {
+                settings = {
+                    Lua = {
+                        runtime = { version = "LuaJIT" },
+                        diagnostics = { globals = { "vim" } },
+                        workspace = {
+                            library = vim.api.nvim_get_runtime_file("", true),
+                            checkThirdParty = false,
+                        },
+                        telemetry = { enable = false },
+                    },
+                },
+            })
+
+            -- Elixir: let Mason supply the binary (it puts elixir-ls on PATH).
+            -- The old hardcoded /usr/bin/elixir-ls does not exist on this box.
+            vim.lsp.config("elixirls", {
+                settings = {
+                    elixirLS = { dialyzerEnabled = true, fetchDeps = false },
+                },
+            })
+
+            -- Enable every installed server. Must run AFTER the vim.lsp.config
+            -- calls above so the settings are registered before resolution.
             require("mason-lspconfig").setup({
                 ensure_installed = {
                     "ts_ls", "eslint", "jsonls", "html", "cssls",
                     "pyright", "gopls", "jdtls", "lua_ls", "clangd",
                     "elixirls", "marksman",
                 },
-                automatic_installation = true,
-                handlers = {
-                    -- Default handler: setup every server with shared capabilities
-                    function(server_name)
-                        lspconfig[server_name].setup(default_opts)
-                    end,
-
-                    -- TypeScript: filter out noisy diagnostics
-                    ["ts_ls"] = function()
-                        lspconfig.ts_ls.setup(vim.tbl_deep_extend("force", default_opts, {
-                            handlers = {
-                                ["textDocument/publishDiagnostics"] = function(_, result, ctx, cfg)
-                                    result.diagnostics = vim.tbl_filter(function(d)
-                                        return not d.message:match("Could not find a declaration file for module")
-                                            and not d.message:match("it may be converted to an ES module")
-                                    end, result.diagnostics)
-                                    vim.lsp.handlers["textDocument/publishDiagnostics"](_, result, ctx, cfg)
-                                end,
-                            },
-                        }))
-                    end,
-
-                    -- ESLint
-                    ["eslint"] = function()
-                        lspconfig.eslint.setup(vim.tbl_deep_extend("force", default_opts, {
-                            settings = {
-                                codeAction = {
-                                    disableRuleComment = { enable = true, location = "separateLine" },
-                                    showDocumentation = { enable = true },
-                                },
-                            },
-                        }))
-                    end,
-
-                    -- Lua: Neovim development settings
-                    ["lua_ls"] = function()
-                        lspconfig.lua_ls.setup(vim.tbl_deep_extend("force", default_opts, {
-                            settings = {
-                                Lua = {
-                                    runtime = { version = "LuaJIT" },
-                                    diagnostics = { globals = { "vim" } },
-                                    workspace = {
-                                        library = vim.api.nvim_get_runtime_file("", true),
-                                        checkThirdParty = false,
-                                    },
-                                    telemetry = { enable = false },
-                                },
-                            },
-                        }))
-                    end,
-
-                    -- Elixir: OS-specific language server path
-                    ["elixirls"] = function()
-                        local opts = vim.tbl_deep_extend("force", default_opts, {
-                            settings = {
-                                elixirLS = { dialyzerEnabled = true, fetchDeps = false },
-                            },
-                        })
-                        if vim.fn.has("mac") == 1 then
-                            opts.cmd = { "/opt/homebrew/bin/elixir-ls" }
-                        elseif vim.fn.has("unix") == 1 then
-                            opts.cmd = { "/usr/bin/elixir-ls" }
-                        end
-                        lspconfig.elixirls.setup(opts)
-                    end,
-                },
+                automatic_enable = true,
             })
 
             -- LSP keybindings via LspAttach autocmd

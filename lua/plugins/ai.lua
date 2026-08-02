@@ -28,17 +28,22 @@ local function open_claude()
         return
     end
 
-    -- Open a vertical split on the right
-    vim.cmd("botright vnew")
-    claude_win = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_width(claude_win, get_claude_width())
-
-    -- Reuse existing buffer if it's still valid and running
+    -- Open a vertical split on the right.
+    -- Reuse path uses `vsplit`, not `vnew`: `vnew` creates a throwaway empty
+    -- buffer that was orphaned the moment we swapped the terminal back in,
+    -- leaking one buffer per toggle.
     if claude_buf and vim.api.nvim_buf_is_valid(claude_buf) then
+        vim.cmd("botright vsplit")
+        claude_win = vim.api.nvim_get_current_win()
         vim.api.nvim_win_set_buf(claude_win, claude_buf)
     else
-        -- Launch claude CLI in the new buffer
-        vim.fn.termopen("claude", {
+        vim.cmd("botright vnew")
+        claude_win = vim.api.nvim_get_current_win()
+
+        -- Launch claude CLI in the new buffer.
+        -- jobstart{term=true} replaces termopen(), deprecated since 0.11.
+        vim.fn.jobstart("claude", {
+            term = true,
             on_exit = function()
                 claude_buf = nil
             end,
@@ -51,6 +56,7 @@ local function open_claude()
         vim.api.nvim_buf_set_name(claude_buf, "claude://chat")
     end
 
+    vim.api.nvim_win_set_width(claude_win, get_claude_width())
     style_claude_win(claude_win)
     vim.cmd("startinsert")
 end

@@ -68,11 +68,6 @@ opt.synmaxcol = 240
 opt.updatetime = 200
 opt.lazyredraw = false
 
--- Disable unused remote providers (saves ~20ms startup)
-vim.g.loaded_ruby_provider = 0
-vim.g.loaded_perl_provider = 0
-vim.g.loaded_node_provider = 0
-
 -- Misc
 opt.shortmess:append("c")
 opt.whichwrap:append("<,>,[,],h,l")
@@ -176,11 +171,11 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 
 -- WSL clipboard integration
 if vim.fn.has("wsl") == 1 then
-    -- Check if WSL interop is available (Windows executables can run)
-    local interop_ok = vim.fn.executable("clip.exe") == 1
-        and vim.fn.system("clip.exe < /dev/null 2>&1; echo $?"):match("^0") ~= nil
-
-    if interop_ok then
+    -- executable() alone is enough to detect WSL interop. The previous check
+    -- also ran clip.exe through vim.fn.system() on every startup, which
+    -- spawns a Windows process synchronously and cost ~40ms per launch for
+    -- information executable() already gives us for free.
+    if vim.fn.executable("clip.exe") == 1 then
         vim.g.clipboard = {
             name = "WslClipboard",
             copy = {
