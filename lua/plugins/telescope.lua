@@ -1,3 +1,77 @@
+-- Directory names that are noise in every project. Kept as bare names so they
+-- can be handed to fd/rg as prune flags *and* turned into anchored Lua patterns
+-- below -- the two layers have to agree or files reappear in one and not the other.
+local noise_dirs = {
+    ".git", "node_modules", "dist", "build", "target",
+    ".next", ".cache", "__pycache__", ".venv", "venv",
+}
+
+-- Anchored to whole path segments. The previous list used bare substrings like
+-- "build/", which also matched "webapp-build/src/main.ts" and silently hid real
+-- source in any directory whose name merely *ended* in a noise word.
+local function ignore_patterns()
+    local pats = {}
+    for _, d in ipairs(noise_dirs) do
+        local lit = d:gsub("%p", "%%%0") -- escape the dot in ".git", ".venv", ...
+        table.insert(pats, "^" .. lit .. "/") -- at the root of the search
+        table.insert(pats, "/" .. lit .. "/") -- nested anywhere below it
+    end
+    -- Generated/binary files, anchored to the end so "%.map$" cannot match a
+    -- source file called "sitemap.ts".
+    return vim.list_extend(pats, {
+        "%.lock$", "%.min%.js$", "%.min%.css$", "%.map$",
+        "%.png$", "%.jpg$", "%.jpeg$", "%.gif$", "%.webp$", "%.ico$",
+        "%.pdf$", "%.zip$", "%.tar%.gz$",
+    })
+end
+
+-- Pick the fastest file lister that actually exists on this machine.
+-- `fd` was hardcoded, but it is not installed everywhere (Debian/Ubuntu ship it
+-- as `fdfind`), which made <leader>ff fail outright. Returning nil lets
+-- Telescope fall back to its own default.
+--
+-- opts.all = true drops every filter, for the "I know it's ignored, show me
+-- anyway" case.
+local function find_command(opts)
+    opts = opts or {}
+    for _, bin in ipairs({ "fd", "fdfind" }) do
+        if vim.fn.executable(bin) == 1 then
+            local cmd = { bin, "--type=f", "--hidden", "--strip-cwd-prefix" }
+            if opts.all then
+                table.insert(cmd, "--no-ignore")
+                return cmd
+            end
+            -- The actual <leader>ff bug: fd honours .gitignore by default, so
+            -- any subdirectory listed there vanished from the picker entirely
+            -- -- not just build output, but source trees people gitignore on
+            -- purpose. --no-ignore-vcs stops .gitignore/.git/info/exclude from
+            -- pruning the walk, while a hand-written .ignore or .fdignore is
+            -- still honoured, so an explicit opt-out keeps working.
+            table.insert(cmd, "--no-ignore-vcs")
+            -- Prune the noise directories during traversal rather than
+            -- post-filtering them: fd never descends, so dropping .gitignore
+            -- does not cost a walk through node_modules.
+            for _, d in ipairs(noise_dirs) do
+                table.insert(cmd, "--exclude=" .. d)
+            end
+            return cmd
+        end
+    end
+    if vim.fn.executable("rg") == 1 then
+        local cmd = { "rg", "--files", "--hidden" }
+        if opts.all then
+            table.insert(cmd, "--no-ignore")
+            return cmd
+        end
+        table.insert(cmd, "--no-ignore-vcs")
+        for _, d in ipairs(noise_dirs) do
+            table.insert(cmd, "--glob=!**/" .. d .. "/*")
+        end
+        return cmd
+    end
+    return nil
+end
+
 return {
     {
         "nvim-telescope/telescope.nvim",
@@ -14,6 +88,20 @@ return {
         keys = {
             -- File & text searching
             { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find files" },
+            -- Escape hatch: everything, including gitignored build output and
+            -- the noise directories <leader>ff prunes.
+            {
+                "<leader>fF",
+                function()
+                    require("telescope.builtin").find_files({
+                        find_command = find_command({ all = true }),
+                        file_ignore_patterns = {},
+                        hidden = true,
+                        no_ignore = true,
+                    })
+                end,
+                desc = "Find files (no filters at all)",
+            },
             { "<leader>fg", "<cmd>Telescope live_grep<cr>", desc = "Search text in files" },
             { "<leader>fb", "<cmd>Telescope buffers<cr>", desc = "List open buffers" },
             { "<leader>fh", "<cmd>Telescope help_tags<cr>", desc = "Search help tags" },
@@ -46,29 +134,6 @@ return {
             local telescope = require("telescope")
             local actions = require("telescope.actions")
 
-            -- Pick the fastest file lister that actually exists on this machine.
-            -- `fd` was hardcoded, but it is not installed here (Debian/Ubuntu
-            -- ship it as `fdfind`), which made <leader>ff fail outright.
-            -- Returning nil lets Telescope fall back to its own default.
-            local function find_command()
-                local excludes = { "--exclude=.git", "--exclude=node_modules" }
-                for _, bin in ipairs({ "fd", "fdfind" }) do
-                    if vim.fn.executable(bin) == 1 then
-                        return vim.list_extend(
-                            { bin, "--type=f", "--hidden", "--strip-cwd-prefix" },
-                            excludes
-                        )
-                    end
-                end
-                if vim.fn.executable("rg") == 1 then
-                    return {
-                        "rg", "--files", "--hidden",
-                        "--glob=!**/.git/*", "--glob=!**/node_modules/*",
-                    }
-                end
-                return nil
-            end
-
             telescope.setup({
                 defaults = {
                     -- Use ripgrep for live_grep, including hidden files but skipping .git
@@ -94,14 +159,9 @@ return {
                         preview_cutoff = 120,
                     },
                     path_display = { "truncate" },
-                    -- Skip heavy directories on every search
-                    file_ignore_patterns = {
-                        "%.git/", "node_modules/", "dist/", "build/", "target/",
-                        "%.next/", "%.cache/", "__pycache__/", "%.venv/", "venv/",
-                        "%.lock", "%.min%.js", "%.min%.css", "%.map",
-                        "%.png", "%.jpg", "%.jpeg", "%.gif", "%.webp", "%.ico",
-                        "%.pdf", "%.zip", "%.tar%.gz",
-                    },
+                    -- Skip heavy directories on every search (anchored -- see
+                    -- ignore_patterns() at the top of this file).
+                    file_ignore_patterns = ignore_patterns(),
                     border = {},
                     borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" },
                     color_devicons = true,
