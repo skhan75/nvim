@@ -36,7 +36,13 @@ local function find_command(opts)
     opts = opts or {}
     for _, bin in ipairs({ "fd", "fdfind" }) do
         if vim.fn.executable(bin) == 1 then
-            local cmd = { bin, "--type=f", "--hidden", "--strip-cwd-prefix" }
+            -- --follow because config trees are routinely assembled out of
+            -- symlinks (~/.config/nvim -> ~/workspace/nvim). Without it fd lists
+            -- the link itself and never descends, so an entire subtree is
+            -- invisible to <leader>ff while its sibling real directories work
+            -- fine -- which reads as "the picker is broken", not "it skipped a
+            -- symlink". fd detects and skips symlink loops on its own.
+            local cmd = { bin, "--type=f", "--hidden", "--follow", "--strip-cwd-prefix" }
             if opts.all then
                 table.insert(cmd, "--no-ignore")
                 return cmd
@@ -58,7 +64,7 @@ local function find_command(opts)
         end
     end
     if vim.fn.executable("rg") == 1 then
-        local cmd = { "rg", "--files", "--hidden" }
+        local cmd = { "rg", "--files", "--hidden", "--follow" }
         if opts.all then
             table.insert(cmd, "--no-ignore")
             return cmd
@@ -136,11 +142,13 @@ return {
 
             telescope.setup({
                 defaults = {
-                    -- Use ripgrep for live_grep, including hidden files but skipping .git
+                    -- Use ripgrep for live_grep, including hidden files but skipping .git.
+                    -- --follow for the same reason find_command() sets it: symlinked
+                    -- subtrees are otherwise unsearchable (see the note there).
                     vimgrep_arguments = {
                         "rg", "--color=never", "--no-heading", "--with-filename",
                         "--line-number", "--column", "--smart-case",
-                        "--hidden", "--glob=!**/.git/*",
+                        "--hidden", "--follow", "--glob=!**/.git/*",
                     },
                     prompt_prefix = "  ",
                     selection_caret = " ",
