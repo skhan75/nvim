@@ -507,8 +507,47 @@ hi("RenderMarkdownH3",          { fg = c.teal_5, bold = true })
 hi("RenderMarkdownH4",          { fg = c.lavender, bold = true })
 hi("RenderMarkdownH5",          { fg = c.amber, bold = true })
 hi("RenderMarkdownH6",          { fg = c.rose, bold = true })
+
+-- Heading backgrounds. The plugin's own defaults link these to DiffText,
+-- DiffAdd, DiffChange, DiffDelete, Visual and CursorColumn -- i.e. it paints
+-- diff and selection colours behind every heading. These are dim tints of the
+-- matching foreground instead, so the level reads from the hue and the bar
+-- never competes with the text.
+hi("RenderMarkdownH1Bg",        { bg = "#04333c" })
+hi("RenderMarkdownH2Bg",        { bg = "#032c34" })
+hi("RenderMarkdownH3Bg",        { bg = "#03252c" })
+hi("RenderMarkdownH4Bg",        { bg = "#1d1a2e" })
+hi("RenderMarkdownH5Bg",        { bg = "#2a2418" })
+hi("RenderMarkdownH6Bg",        { bg = "#2a1b23" })
+
 hi("RenderMarkdownCode",        { bg = c.bg_alt })
 hi("RenderMarkdownCodeInline",  { fg = c.amber, bg = c.bg_alt })
+hi("RenderMarkdownCodeInfo",    { fg = c.fg_muted, bg = c.bg_alt, italic = true })
+hi("RenderMarkdownCodeBorder",  { fg = c.bg_alt, bg = c.bg_alt })
+hi("RenderMarkdownCodeFallback",{ fg = c.fg_muted, bg = c.bg_alt })
+
+-- Lists, rules and quotes.
+hi("RenderMarkdownBullet",      { fg = c.teal_4 })
+hi("RenderMarkdownDash",        { fg = c.bg_grid })
+hi("RenderMarkdownQuote",       { fg = c.teal_2 })
+hi("RenderMarkdownSign",        { fg = c.fg_subtle })
+hi("RenderMarkdownIndent",      { fg = c.bg_indent })
+
+-- Checkboxes: unchecked is quiet, checked is clearly "done", and the custom
+-- `[~]` in-progress / `[!]` blocked states get their own accents.
+hi("RenderMarkdownUnchecked",   { fg = c.fg_dim })
+hi("RenderMarkdownChecked",     { fg = c.sage })
+hi("RenderMarkdownTodo",        { fg = c.amber })
+
+-- Links.
+hi("RenderMarkdownLink",        { fg = c.teal_6, underline = true })
+hi("RenderMarkdownLinkTitle",   { fg = c.teal_5 })
+hi("RenderMarkdownWikiLink",    { fg = c.lavender, underline = true })
+
+-- Pipe tables.
+hi("RenderMarkdownTableHead",   { fg = c.teal_6, bold = true })
+hi("RenderMarkdownTableRow",    { fg = c.fg })
+hi("RenderMarkdownTableFill",   { fg = c.bg })
 
 -- ── Snacks (indent / notifier / dashboard / dim / statuscolumn) ──────
 -- These replaced indent-blankline, nvim-notify, dressing and alpha, and had no

@@ -191,6 +191,7 @@ return {
                 { "<leader>h", group = "Harpoon" },
                 { "<leader>j", group = "Split / Join" },
                 { "<leader>l", group = "LSP" },
+                { "<leader>m", group = "Markdown" },
                 { "<leader>n", group = "Tests" },
                 { "<leader>p", group = "Project / Session" },
                 { "<leader>r", group = "Refactor" },
