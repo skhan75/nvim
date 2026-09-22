@@ -17,6 +17,9 @@ require("lazy").setup("plugins", {
     -- eager load and lazy.nvim's own profiling couldn't flag it.
     defaults = { lazy = true },
     install = { colorscheme = { "hack" } },
+    -- Plugins by skhan75 load from ~/workspace/<name> when that checkout exists
+    -- (live development), and clone from GitHub on any other machine.
+    dev = { path = "~/workspace", patterns = { "skhan75" }, fallback = true },
     checker = { enabled = false },
     change_detection = { notify = false },
     performance = {

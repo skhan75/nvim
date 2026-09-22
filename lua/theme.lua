@@ -559,6 +559,19 @@ function M.apply(name, c, opts)
     hi("TroubleNormal",             { bg = bar_bg })
     hi("TroubleText",               { fg = c.fg })
     hi("TroubleCount",              { fg = c.lavender, bg = c.bg_surface })
+    -- ── glassterm (floating terminal) ─────────────────────────────────
+    -- The float shares the editor's background, so with transparency on it
+    -- is the same Ghostty glass as the code around it.
+    hi("GlasstermNormal",           { fg = c.fg, bg = main_bg })
+    hi("GlasstermBorder",           { fg = c.teal_2 })
+    hi("GlasstermAccent",           { fg = c.teal_hi })
+    hi("GlasstermTitle",            { fg = c.teal_hi, bold = true })
+    hi("GlasstermHint",             { fg = c.fg_muted })
+    hi("GlasstermError",            { fg = c.coral })
+    hi("GlasstermErrorChip",        { fg = c.bg, bg = c.coral, bold = true })
+    hi("GlasstermTab",              { fg = c.fg_dim })
+    hi("GlasstermTabActive",        { fg = c.bg, bg = c.teal_hi, bold = true })
+
     -- Dedicated yank highlight. This used IncSearch (dark-on-#66FFFF, bold), which
     -- strobed the whole line on every yank.
     hi("YankFlash",                 { bg = c.bg_selection })

@@ -89,7 +89,7 @@ return {
                     lualine_y = {},
                     lualine_z = {},
                 },
-                extensions = { "nvim-tree", "quickfix", "toggleterm", "lazy", "trouble" },
+                extensions = { "nvim-tree", "quickfix", "lazy", "trouble" },
             })
         end,
     },

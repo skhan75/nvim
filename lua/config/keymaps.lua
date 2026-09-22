@@ -56,7 +56,7 @@ map("i", "<M-BS>", "<C-w>", { desc = "Delete word backwards" })
 
 -- ─── Terminal mode ──────────────────────────────────────────────────────
 -- There were no terminal-mode maps at all, so leaving the Claude sidebar or
--- toggleterm meant typing <C-\><C-n> then <C-w>h every time.
+-- a terminal meant typing <C-\><C-n> then <C-w>h every time.
 -- Alt, not Ctrl: the Claude TUI and shell readline consume the Ctrl variants.
 map("t", "<M-h>", "<C-\\><C-n><C-w>h", { desc = "Terminal → window left" })
 map("t", "<M-j>", "<C-\\><C-n><C-w>j", { desc = "Terminal → window down" })
