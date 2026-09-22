@@ -30,8 +30,8 @@ return {
             local theme = "auto"
 
             if p then
-                local mid = { bg = p.bg_alt, fg = p.fg_muted }
-                local tail = { bg = p.bg_alt, fg = p.fg_dim }
+                local mid = { bg = (p.bar_bg or p.bg_alt), fg = p.fg_muted }
+                local tail = { bg = (p.bar_bg or p.bg_alt), fg = p.fg_dim }
                 theme = {
                     normal = { a = { fg = p.bg, bg = p.teal_hi, gui = "bold" }, b = mid, c = tail },
                     insert = { a = { fg = p.bg, bg = p.sage, gui = "bold" }, b = mid, c = tail },
@@ -39,9 +39,9 @@ return {
                     replace = { a = { fg = p.bg, bg = p.coral, gui = "bold" }, b = mid, c = tail },
                     command = { a = { fg = p.bg, bg = p.lavender, gui = "bold" }, b = mid, c = tail },
                     inactive = {
-                        a = { bg = p.bg_alt, fg = p.fg_dim },
-                        b = { bg = p.bg_alt, fg = p.fg_dim },
-                        c = { bg = p.bg_alt, fg = p.fg_subtle },
+                        a = { bg = (p.bar_bg or p.bg_alt), fg = p.fg_dim },
+                        b = { bg = (p.bar_bg or p.bg_alt), fg = p.fg_dim },
+                        c = { bg = (p.bar_bg or p.bg_alt), fg = p.fg_subtle },
                     },
                 }
             end

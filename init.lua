@@ -14,10 +14,11 @@ require("config.compat")
 -- Core configuration
 require("config.options")
 
--- Colorscheme. `hack` is local (colors/hack.lua), so it needs no plugin and no
--- download -- cyberdream.nvim used to be installed purely to source a lualine
--- theme, which lualine now builds from _G.HackPalette directly.
-vim.cmd.colorscheme("hack")
+-- Colorscheme. Both schemes are local (colors/*.lua over lua/theme.lua), so
+-- they need no plugin and no download; lualine builds its theme from
+-- _G.HackPalette, which whichever scheme loads fills in. `blazer` matches
+-- ghostty's current theme and is transparent; `hack` is the teal original.
+vim.cmd.colorscheme("blazer")
 
 -- Plugin manager (lazy.nvim) - loads all plugin specs from lua/plugins/
 require("config.lazy")
