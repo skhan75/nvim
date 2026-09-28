@@ -174,7 +174,14 @@ return {
             { "<leader>jj", "<cmd>TSJJoin<cr>", desc = "Join block into one line" },
         },
         config = function()
-            require("treesj").setup({})
+            require("treesj").setup({
+                -- treesj's own <space>j and <space>s would sit underneath
+                -- <leader>js and <leader>jj and fire on a slow keypress.
+                use_default_keymaps = false,
+                -- The default cap of 120 refuses to join anything worth
+                -- splitting back out, like a dict literal.
+                max_join_length = 2000,
+            })
         end,
     },
 
