@@ -220,7 +220,12 @@ return {
                         case_mode = "smart_case",
                     },
                     project = {
-                        base_dirs = { "~/workspace" },
+                        -- My checkouts live in ~/workspace. Anywhere else,
+                        -- fall back to home rather than list nothing.
+                        base_dirs = {
+                            vim.fn.isdirectory(vim.fn.expand("~/workspace")) == 1 and "~/workspace"
+                                or "~",
+                        },
                         hidden_files = true,
                         theme = "dropdown",
                         order_by = "asc",
